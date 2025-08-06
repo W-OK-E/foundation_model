@@ -1,0 +1,53 @@
+# === Training Configuration ===
+training:
+  epochs: 50
+  batch_size: 16
+  device: "cuda"  # options: "cuda", "cpu"
+  seed: 42
+
+# === Optimizer ===
+optimizer:
+  name: "Adam"  # options: "Adam", "SGD", etc.
+  lr: 0.001
+  weight_decay: 0.0001
+  momentum: 0.9  # used only if optimizer is SGD
+
+# === Learning Rate Scheduler ===
+lr_scheduler:
+  use_scheduler: true
+  name: "StepLR"  # options: "StepLR", "CosineAnnealingLR", "ReduceLROnPlateau"
+  step_size: 10
+  gamma: 0.5
+  # Optional for ReduceLROnPlateau
+  mode: "min"
+  factor: 0.1
+  patience: 5
+
+# === Loss Function ===
+loss:
+  name: "CrossEntropyLoss"  # options: "MSELoss", "BCEWithLogitsLoss", etc.
+
+# === Dataset ===
+dataset:
+  name: "IDRID"
+  path: "/mnt/data/omkumar/foundation_phase1/Phase_1_Data/IDRID"
+  image_size: [256, 256]
+  train_split: "train"
+  test_split: "test"
+  num_classes: 6 #5 diseases classes and one class when no object is present there
+  use_augmentation: true
+  cache_dir: "preprocessed"
+
+# === Model Configuration ===
+model:
+  name: "UNet"  # or your custom model name
+  in_channels: 3
+  out_channels: 1
+  pretrained: false
+
+# === Logging & Checkpoints ===
+logging:
+  save_dir: "./checkpoints"
+  log_interval: 10
+  save_interval: 1
+  use_tensorboard: true
