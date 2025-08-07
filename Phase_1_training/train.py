@@ -87,15 +87,12 @@ for epoch in tqdm.tqdm(range(epochs)):
         masks = masks.to(device)
         
         outputs = model(images)
-        print(images.shape)  # Should be [B, 3, H, W]
-        print(outputs.shape)  # Should be [B, 6, H, W]
-        print(masks.shape)   # Should be [B, H, W]
-        print(masks.min(), masks.max())  # Should be (0, 5)
-        print(masks.dtype)   # Should be torch.long
+        # print(images.shape)
+        # print(masks.shape)
+        # print(masks.max(),masks.min())
 
-        print("Shape of Output files:",outputs.shape,masks.shape,images.shape)
-        import sys
-        sys.exit(0)
+        # import sys
+        # sys.exit(0)
         loss = loss_fn(outputs, masks)
 
         optimizer.zero_grad()
