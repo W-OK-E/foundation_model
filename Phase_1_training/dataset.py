@@ -32,54 +32,78 @@ class CustomDataset(Dataset):
 
     def __getitem__(self, index):
         fname = self.im_paths[index]
-        pt_path = os.path.join(self.cache_dir, fname.replace('.jpg', '.pt').replace('.png', '.pt').replace('.tif','.pt'))
+        pt_path = os.path.join(self.cache_dir, fname.replace('.jpg', '.pt').replace('.png', '.pt').replace('.tif', '.pt'))
 
-        # Load from .pt if it exists
         if os.path.exists(pt_path):
             return torch.load(pt_path)
 
-        # Otherwise, preprocess and save
         img_path = os.path.join(self.raw_image_dir, fname)
         mask_path = os.path.join(self.raw_mask_dir, fname)
 
-        if(self.conversion):
-            image = Image.open(img_path).convert("RGB").resize(self.img_sz)
-            mask = Image.open(mask_path).convert("L").resize(self.img_sz, Image.NEAREST)
+        # Load image
+        if self.conversion:
+            image = Image.open(img_path).convert("RGB")
         else:
-            image = Image.open(img_path).resize(self.img_sz)
-            mask = Image.open(mask_path).resize(self.img_sz, Image.NEAREST)
+            image = Image.open(img_path)
 
-        if(self.image_transform is not None):
-            image = self.image_transform(image)  # Tensor [3, H, W]
+        # FIXED: Handle mask properly
+        mask_pil = Image.open(mask_path)
+        mask_array = self.image_transform(mask_pil).cpu().numpy()
+        if self.conversion:
+            # If it's RGB but all channels have same values, extract from one channel
+            if len(mask_array.shape) == 3:
+                # Check if all channels are identical (R=G=B for each pixel)
+                if np.allclose(mask_array[:,:,0], mask_array[:,:,1]) and np.allclose(mask_array[:,:,1], mask_array[:,:,2]):
+                    mask_array = mask_array[:,:,0]  # Take red channel
+                else:
+                    # If channels are different, you might need custom logic here
+                    # For now, assume red channel contains class info
+                    mask_array = mask_array[:,:,0]
+            
+            mask = torch.from_numpy(mask_array).long()
+        else:
+            # If not converting, assume it's already in correct format
+            mask = torch.from_numpy(mask_array).long()
+
+        # Apply transform to image
+        if self.image_transform is not None:
+            image = self.image_transform(image)
+            image = torch.tensor(image,dtype=torch.float32)
         
-        mask = torch.from_numpy(np.array(mask)).long()  # Tensor [H, W]
-
+        # Remove any extra dimensions from mask
+        if mask.dim() > 2:
+            mask = mask.squeeze()
+        
+        # print(f"Saving image and mask: {image.shape}, {mask.shape}")
+        # print(f"Mask unique values: {torch.unique(mask)}")  # Debug: check class values
+        
         torch.save((image, mask), pt_path)
-
         return image, mask
-
+    
 
 if __name__ == "__main__":
 
-    with open("config.yaml", "r") as f:
+    with open("/mnt/data/omkumar/foundation_phase1/Phase_1_training/configs/us_nerve.yaml", "r") as f:
         cfg = yaml.safe_load(f)
+
+    img_sz=cfg["dataset"]["image_size"]
+    transforms = []
+    if(img_sz is not None):
+        transforms.append(T.Resize(tuple(img_sz)))
+    transforms.append(T.ToTensor())
 
     train_dataset = CustomDataset(
                     name=cfg["dataset"]["name"],
                     data_dir=cfg["dataset"]["path"],
-                    img_sz=tuple(cfg["dataset"]["image_size"]),
+                    img_sz=img_sz,
                     is_train=True,
-                    transform = T.Compose([
-                                            T.Resize(cfg["dataset"]["image_size"]),
-                                            T.ToTensor()
-                                        ]),
+                    transform = T.Compose(transforms),
                     cache_dir=cfg["dataset"]["cache_dir"],
                     conversion = cfg['dataset']['conversion']
                     )
 
     train_loader = DataLoader(train_dataset, batch_size=cfg["training"]["batch_size"], shuffle=True)
 
+    for sample in train_loader:
+        print(sample[1].shape)
 
-    for img,labels in train_loader:
-        print(img.shape,labels.shape)
-        break

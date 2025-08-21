@@ -1,0 +1,63 @@
+# === Training Configuration ===
+training:
+  epochs: 500
+  batch_size: 32
+  device: "cuda:1"  # options: "cuda", "cpu"
+  seed: 42
+
+# === Optimizer ===
+optimizer:
+  name: "Adam"  # options: "Adam", "SGD", etc.
+  lr: 0.001
+  weight_decay: 0.0001
+  momentum: 0.9  # used only if optimizer is SGD
+
+# === Learning Rate Scheduler ===
+lr_scheduler:
+  use_scheduler: true
+  name: "ReduceLROnPlateau"  # options: "StepLR", "CosineAnnealingLR", "ReduceLROnPlateau"
+  step_size: 10
+  gamma: 0.5
+  # Optional for ReduceLROnPlateau
+  mode: "min"
+  factor: 0.1
+  patience: 5
+
+# === Loss Function ===
+loss:
+  name: "CrossEntropyLoss"  # options: "MSELoss", "BCEWithLogitsLoss", etc.
+
+# === Dataset ===
+dataset:
+  name: "US_Nerve_Seg"
+  path: "/mnt/data/omkumar/foundation_phase1/Phase_1_Data/US_Nerve_Seg"
+  image_size: [512,640]
+  train_split: "train"
+  test_split: "test"
+  num_classes: 2 #0,1
+  use_augmentation: true
+  cache_dir: "preprocessed"
+  conversion: false
+
+validation:
+  enabled: true
+  path: "/mnt/data/omkumar/foundation_phase1/Phase_1_Data/US_Nerve_Seg"
+  batch_size: 32
+  cache_dir: "preprocessed"
+  log_interval: 10
+
+# === Model Configuration ===
+model:
+  name: "UNet"  # or your custom model name
+  in_channels: 1
+  out_channels: 1
+  pretrained: true
+
+# === Logging & Checkpoints ===
+logging:
+  exp_name: "US_Nerve_Seg"
+  save_dir: "logs/"
+  log_interval: 10
+  save_interval: 10
+  use_tensorboard: true
+  results: "results/quick_test"
