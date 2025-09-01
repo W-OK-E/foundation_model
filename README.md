@@ -31,10 +31,13 @@ pip install -r requirements_clean.txt
 To begin with, we are working with segmentation dataset, and for each dataset, the following folder structure needs to be adopted:
 
 ```
-<Dataset_Name>/train/images
-Phase_1_training/Dataset/train/labels
-Phase_1_training/Dataset/test/images
-Phase_1_training/Dataset/test/labels
+<Dataset_Name>
+    /train
+        /images
+        /labels
+    /test
+        /images
+        /labels
 
 
 Place your training and test data inside the corresponding folders.
@@ -66,7 +69,7 @@ Therefore what you must do is read data sample from the dataset and check the Or
 Run training inside a tmux session to prevent loss on disconnection:
 
 ```bash
-tmux new -s train_idrid
+tmux new -s <session_name> //Session Name can be anything
 ```
 Then run:
 ```bash
