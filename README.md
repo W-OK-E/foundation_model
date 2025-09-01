@@ -1,11 +1,11 @@
-# Foundation Model for Medical Image Segmentation
+# Foundation Model for Medical Imaging
 
-This repository contains code and configurations for training a foundation segmentation model across multiple medical imaging datasets. Currently, it supports:
+This repository contains code and configurations for training a foundation model across multiple medical imaging datasets. Currently, it is being trained on:
 
 - **IDRID** (Diabetic Retinopathy)
 - **US-Nerve Segmentation** (Ultrasound Nerve Images)
 
-The goal is to build a multi-modal, multi-resolution segmentation model using a shared architecture (EliteNet), with considerations for varying input sizes and dataset characteristics.
+The goal is to build a multi-modal,multi-task and maybe a multi-resolution model using a shared architecture (EliteNet), with considerations for varying input sizes and dataset characteristics.
 
 ---
 
