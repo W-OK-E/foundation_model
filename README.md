@@ -14,8 +14,8 @@ The goal is to build a multi-modal,multi-task and maybe a multi-resolution model
 ### 1. Clone the Repository
 
 ```bash
-git clone <your_repo_url>
-cd <your_repo_name>
+git clone git@github.com:W-OK-E/foundation_model.git
+cd foundation_model
 ```
 
 ### 2. Set Up Environment
