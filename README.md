@@ -1,36 +1,86 @@
-# foundation_model
+# Foundation Model for Medical Image Segmentation
+
+This repository contains code and configurations for training a foundation segmentation model across multiple medical imaging datasets. Currently, it supports:
+
+- **IDRID** (Diabetic Retinopathy)
+- **US-Nerve Segmentation** (Ultrasound Nerve Images)
+
+The goal is to build a multi-modal, multi-resolution segmentation model using a shared architecture (EliteNet), with considerations for varying input sizes and dataset characteristics.
+
+---
+
+## Getting Started
+
+### 1. Clone the Repository
+
+```bash
+git clone <your_repo_url>
+cd <your_repo_name>
+```
+
+### 2. Set Up Environment
+
+We recommend using conda to create and manage the environment.
+```bash
+conda create -n foundation_seg python=3.10 -y
+conda activate foundation_seg
+pip install -r requirements_clean.txt
+```
+### 3. Directory Structure
+
+To begin with, we are working with segmentation dataset, and for each dataset, the following folder structure needs to be adopted:
+
+```
+<Dataset_Name>/train/images
+Phase_1_training/Dataset/train/labels
+Phase_1_training/Dataset/test/images
+Phase_1_training/Dataset/test/labels
 
 
-Dice and Jackard Index for every modality and model training.
+Place your training and test data inside the corresponding folders.
+```
+### 4. Dataset Configuration
 
-A combined dataset training for IDRID and US_Nerve_Segmentation
+- Each dataset requires a dedicated YAML configuration file under the configs/ directory.
+- Use configs/idrid.yaml as a reference.
+- Paths, image size, number of classes, and other dataset-specific parameters are defined here.
 
-Share Visual Results
+#### Input Shapes and Padding
 
-FOR Idrid dataset:
+In each config file, there is a `image_size` attribute, notes on how to set that:
 
-shape = (2848,4288) 
-padded_shape = (2944,4352) #Apply requried reflect padding
+EliteNet downsamples the input image 7 times, each by a factor of 2. Therefore, image dimensions must be a multiple of 128.
 
-For US_Nerve_Seg 
-shape = (580,420)
-padded_shape = (640,512)
+| Dataset         | Original Shape  | Required (Padded) Shape |
+|------------------|------------------|--------------------------|
+| IDRID            | (2848, 4288)     | (2944, 4352)             |
+| US-Nerve Seg     | (580, 420)       | (640, 512)               |
 
-These shapes are required coz at each step in EliteNet, the images are downsampled 7 times by factors of 2
-Hence whatever the size of the image we need to take it to the nearest multiple of 128.
+> Padding is applied using **reflect padding**.
+Therefore what you must do is read data sample from the dataset and check the Original Shape, then calculate the nearest multiple of 128, that becomes your `image_size` attribute in the config file, put that in the yaml file. YOU DONOT HAVE TO DO ANY PADDING OR TRANSFORMS YOURSELVES
 
-Dataloader needs to be modified - Needs to be able to handle these two datasets at input with their unique resolution 
+- If a dataset cannot be restructured into the expected folder layout (train/images, train/labels, etc.), a custom dataset/dataloader class must be written.
 
+### 5. Training
 
-Also at the output we can increase the number of classes for datasets which has less number of classes but then this 
-becomes trickier as the number of datasets increases. 
+Run training inside a tmux session to prevent loss on disconnection:
 
-Take the smaller resolution
+```bash
+tmux new -s train_idrid
+```
+Then run:
+```bash
+python3 train.py --config configs/idrid.yaml
+```
+Replace the path to the config file depending on which dataset you're training on.
 
-Three Experiments:
-
-1. IDRID
-2. US-Nerve Segmentation
-3. Combined - One with different sizes | One where US-Nerve Seg is padded upto the size of IDRID Dataset
-
-TODO: Check if it is possible to load different sized images in one single batch.
+#### Monitoring Training
+You can monitor the training process via the `utils/monitor.py` script but you need to verify that the script is indeed sending messages to your slack app.
+You can verify that by running some gibberish as:
+```bash
+python3 utils/monitor.py 'sfandfoanf'
+```
+And you should get a message on your slack app.
+```bash
+python3 utils/monitor.py 'python3 train.py --config <path_to_config>'
+```
