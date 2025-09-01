@@ -69,7 +69,7 @@ with open(cfg_path, "r") as f:
 
 # === Set random seed and device ===
 os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
-print(torch.cuda.device_count())
+print("Number of GPUs visible:",torch.cuda.device_count())
 # import sys
 # sys.exit(0)
 torch.manual_seed(cfg["training"]["seed"])

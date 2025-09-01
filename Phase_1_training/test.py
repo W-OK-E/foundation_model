@@ -36,17 +36,34 @@ def predictions_to_classes(predictions):
     """
     return torch.argmax(predictions, dim=1)
 
-# === Load config ===
+# === Parsing CLI Arguments ===
 parser = argparse.ArgumentParser(description="Train UNet with config")
 parser.add_argument("--config", type=str, required=True, help="Path to config.yaml file")
-parser.add_argument("--ckpt_epoch",type=int, required=True, help="Epoch for the saved CKPT")
+parser.add_argument("--ckpt_epoch",type=int, help="Epoch for the saved CKPT")
+parser.add_argument("--best_jaccard", action='store_true', help="Use checkpoint with best Jaccard index")
+parser.add_argument("--best_dice", action='store_true', help="Use checkpoint with best Dice coefficient")
+
 args = parser.parse_args()
+#Ensuring that atleast one option has been provided
+ckpt_options = [
+    args.ckpt_epoch is not None,
+    args.best_jaccard,
+    args.best_dice
+]
+
+if ckpt_options.count(True) != 1:
+    raise ValueError("You must provide exactly one of the following: --ckpt_epoch, --best_jaccard, or --best_dice.")
 
 # === Load config.yaml ===
 cfg_path = args.config
 with open(cfg_path, "r") as f:
     cfg = yaml.safe_load(f)
 
+os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
+print("Number of GPUs visible:",torch.cuda.device_count())
+# import sys
+# sys.exit(0)
+torch.manual_seed(cfg["training"]["seed"])
 device = torch.device(cfg["training"]["device"] if torch.cuda.is_available() else "cpu")
 
 # === Data transform ===
@@ -72,9 +89,19 @@ model = UNet(
     n_classes=cfg["dataset"]["num_classes"],
     layers=[4, 8, 16]
 ).to(device)
-# model.load_state_dict(torch.load(cfg["logging"]["save_dir"] + "/best_model.pt", map_location=device))
 
-ckpt_file = f'/mnt/data/omkumar/foundation_phase1/Phase_1_training/logs/ckpts/IDRID/ALL/model_epoch_{args.ckpt_epoch}.pt'
+# === Loading State Dict ===
+ckpt_file = None
+if(args.ckpt_epoch is not None):
+    ckpt_file = f'/mnt/data/omkumar/foundation_phase1/Phase_1_training/logs/ckpts/US_Nerve_Seg/ALL/model_epoch_{args.ckpt_epoch}.pt'
+    save_suff = args.ckpt_epoch
+elif(args.best_dice):
+    ckpt_file = f'/mnt/data/omkumar/foundation_phase1/Phase_1_training/logs/ckpts/US_Nerve_Seg/Best/best_dice.pt'
+    save_suff = "best_dice"
+else:
+    ckpt_file = f'/mnt/data/omkumar/foundation_phase1/Phase_1_training/logs/ckpts/US_Nerve_Seg/Best/best_jaccard.pt'
+    save_suff = "best_jacc"
+
 model.load_state_dict(torch.load(ckpt_file,map_location=device))
 model.eval()
 
@@ -83,7 +110,7 @@ dice_scores = []
 jaccard_scores = []
 
 timestamp = datetime.datetime.now().strftime("%Y-%m-%d")
-res_save_dir = cfg["logging"]["results"] + f"/session_{timestamp}_epoch_{args.ckpt_epoch}"
+res_save_dir = cfg["logging"]["results"] + f"/session_{timestamp}_epoch_{save_suff}"
 
 os.makedirs(res_save_dir,exist_ok=True)
 
@@ -91,14 +118,45 @@ with torch.no_grad():
     for idx,(images, masks) in tqdm(enumerate(val_loader)):
         images, masks = images.to(device), masks.to(device)
         outputs = model(images)
+        outputs_corrected = predictions_to_classes(outputs)
+        # print("Masks Shape:",masks.shape)
+        # print("Outputs Shape:",outputs.shape)
+        # print("Masks Unique values:",torch.unique(masks))
+        # print("Outputs Unique Values:",torch.unique(outputs_corrected))
+
+        from utils.utils import calculate_dice_on_each_class
+        class_dice_scores,class_jack_scores = calculate_dice_on_each_class(masks,outputs)
+
+        metric_out_file = os.path.join(res_save_dir,f'Metric{idx}.txt')
+        with open(metric_out_file,'w') as file:
+            for cls in class_dice_scores:
+                file.write(f'{cls}\n')
+            file.write("\nJaccard Indices")
+            for cls in class_jack_scores:
+                file.write(f'{cls}\n')
+
+        print("The outputs:",outputs.shape)
         outputs_processed = torch.tensor(predictions_to_classes(outputs)*100,dtype = torch.uint8)
         masks_processed = torch.tensor(masks*100,dtype = torch.uint8)
 
         pred_save_path  = os.path.join(res_save_dir,f'Pred_Mask_{idx}.png')
         mask_save_path = os.path.join(res_save_dir,f"GT_Mask{idx}.png")
+    
+        assert outputs_processed.shape == masks_processed.shape
 
-        Image.fromarray(outputs_processed.squeeze(0).cpu().numpy()).save(pred_save_path)
-        Image.fromarray(masks_processed.squeeze(0).cpu().numpy()).save(mask_save_path)
+        print(torch.unique(masks_processed[0]))
+        if(outputs_processed.ndim > 3):
+            Image.fromarray(outputs_processed.squeeze(0).cpu().numpy()).save(pred_save_path)
+            Image.fromarray(masks_processed.squeeze(0).cpu().numpy()).save(mask_save_path)
+        else:
+            for batch in tqdm(range(0,outputs_processed.shape[0],4)):
+                pred_save_path  = os.path.join(res_save_dir,f'Pred_Mask_{batch}.png')
+                mask_save_path = os.path.join(res_save_dir,f"GT_Mask{batch}.png")
+                Image.fromarray(outputs_processed[batch].cpu().numpy()).save(pred_save_path)
+                Image.fromarray(masks_processed[batch].cpu().numpy()).save(mask_save_path)
+        print("Saved the Images")
+        import sys
+        sys.exit(0)
         # vutils.save_image(outputs_processed,pred_save_path)
         # vutils.save_image(masks_processed,mask_save_path)        
         # dice_scores.append(dice_score(outputs, masks))
