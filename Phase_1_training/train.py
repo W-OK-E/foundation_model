@@ -10,15 +10,15 @@ from torchmetrics import JaccardIndex
 from torch.utils.data import DataLoader
 from torchvision import transforms
 import matplotlib.pyplot as plt
-from EliteNet import UNet              # Replace with actual model import
-from dataset import CustomDataset      # Replace with actual dataset import
+from EliteNet import UNet              
+from dataset import CustomDataset
 
 from utils.utils import get_reflect_pad_transform
 
-# === Metrics ===
+
 def dice_coefficient(pred, target, eps=1e-6):
     target = target.unsqueeze(1)
-    pred = torch.sigmoid(pred)  # for logits output
+    pred = torch.sigmoid(pred)  
     pred = (pred > 0.5).float()
     intersection = (pred * target).sum(dim=(1, 2, 3))
     union = pred.sum(dim=(1, 2, 3)) + target.sum(dim=(1, 2, 3))
@@ -39,9 +39,9 @@ def convert_to_one_hot(labels, num_classes=6):
     """
     Convert (B, 1, H, W) indices to (B, 6, H, W) one-hot
     """
-    labels = labels.squeeze(1)  # (B, H, W)
-    one_hot = F.one_hot(labels.long(), num_classes=num_classes)  # (B, H, W, 6)
-    return one_hot.permute(0, 3, 1, 2).float()  # (B, 6, H, W)
+    labels = labels.squeeze(1) 
+    one_hot = F.one_hot(labels.long(), num_classes=num_classes) 
+    return one_hot.permute(0, 3, 1, 2).float()
 
 
 def predictions_to_classes(predictions):
@@ -52,30 +52,24 @@ def predictions_to_classes(predictions):
     """
     return torch.argmax(predictions, dim=1)
 
-# === Load config.yaml ===
+
 parser = argparse.ArgumentParser(description="Train UNet with config")
 parser.add_argument("--config", type=str, required=True, help="Path to config.yaml file")
 args = parser.parse_args()
 
-# === Load config.yaml ===
+
 cfg_path = args.config
 with open(cfg_path, "r") as f:
     cfg = yaml.safe_load(f)
 
 
-# cfg_path = '/mnt/data/omkumar/foundation_phase1/Phase_1_training/configs/idrid.yaml'
-# with open(cfg_path, "r") as f:
-#     cfg = yaml.safe_load(f)
 
-# === Set random seed and device ===
 os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
 print("Number of GPUs visible:",torch.cuda.device_count())
-# import sys
-# sys.exit(0)
+
 torch.manual_seed(cfg["training"]["seed"])
 device = torch.device(cfg["training"]["device"] if torch.cuda.is_available() else "cpu")
 
-# === Define transforms ===
 final_sz = cfg["dataset"]["image_size"]
 train_im_path = os.path.join(cfg["dataset"]["path"],"train","images")
 
@@ -86,7 +80,7 @@ transform = transforms.Compose([
     transforms.PILToTensor() 
 ])
 
-# === Create train dataset & loader ===
+
 train_dataset = CustomDataset(
     name=cfg["dataset"]["name"],
     data_dir=cfg["dataset"]["path"],
@@ -97,7 +91,6 @@ train_dataset = CustomDataset(
 )
 train_loader = DataLoader(train_dataset, batch_size=cfg["training"]["batch_size"], shuffle=True)
 
-# === Optional validation dataset & loader ===
 val_loader = None
 if cfg.get("validation", {}).get("enabled", False):
     val_dataset = CustomDataset(
@@ -110,18 +103,17 @@ if cfg.get("validation", {}).get("enabled", False):
     )
     val_loader = DataLoader(val_dataset, batch_size=cfg["validation"]["batch_size"], shuffle=False)
 
-# === Model ===
+
 model = UNet(
     in_c=cfg["model"]["in_channels"],
     n_classes=cfg["dataset"]["num_classes"],
     layers=[4, 8, 16]
 ).to(device)
 
-# === Loss Function and Metrics ===
 loss_fn = getattr(nn, cfg["loss"]["name"])()
 dice_score = DiceScore(num_classes = 6,average = "micro")
 jack_index = JaccardIndex(task = 'multiclass',num_classes=6,average = "micro")
-# === Optimizer ===
+
 optimizer_name = cfg["optimizer"]["name"]
 optimizer_class = getattr(optim, optimizer_name)
 optimizer_args = {
@@ -133,7 +125,6 @@ if optimizer_name == "SGD":
 
 optimizer = optimizer_class(model.parameters(), **optimizer_args)
 
-# === Learning Rate Scheduler ===
 scheduler = None
 if cfg["lr_scheduler"]["use_scheduler"]:
     scheduler_name = cfg["lr_scheduler"]["name"]
@@ -149,12 +140,11 @@ if cfg["lr_scheduler"]["use_scheduler"]:
     elif scheduler_name == "CosineAnnealingLR":
         scheduler = optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=10)
 
-# === Tracking for plots ===
 train_losses, val_losses = [], []
 train_dice_scores, val_dice_scores = [], []
 train_jaccard_scores, val_jaccard_scores = [], []
 
-# === Training Loop ===
+
 epochs = cfg["training"]["epochs"]
 log_interval = cfg["logging"]["log_interval"]
 
@@ -171,10 +161,9 @@ for epoch in tqdm.tqdm(range(epochs), desc="Training Epochs"):
         # print("Fetched a batch:",images.size(),masks.size(),images.device,masks.device)
         outputs = model(images)
         # print("Masks Shape before the Squeeze Operation:",masks.shape)
-       # Add this right before your loss computation
         masks = masks.squeeze(1)
 
-        # Check if masks have any unexpected dimensions
+
         if masks.dim() != 3:  # Should be [batch_size, H, W]
             print(f"WARNING: Masks have {masks.dim()} dimensions, expected 3")
         if outputs.dim() != 4:  # Should be [batch_size, num_classes, H, W]
@@ -193,7 +182,6 @@ for epoch in tqdm.tqdm(range(epochs), desc="Training Epochs"):
         loss.backward()
         optimizer.step()
 
-        # Metrics
         total_loss += loss.item()
         pred_processed = predictions_to_classes(outputs)
         # print("Device Training:",pred_processed.cpu(),masks.cpu())
@@ -217,7 +205,7 @@ for epoch in tqdm.tqdm(range(epochs), desc="Training Epochs"):
     train_dice_scores.append(avg_train_dice)
     train_jaccard_scores.append(avg_train_jaccard)
 
-    # === Validation Loop ===
+
     if val_loader is not None:
         model.eval()
         val_loss, val_dice, val_jaccard = 0, 0, 0
@@ -251,34 +239,28 @@ for epoch in tqdm.tqdm(range(epochs), desc="Training Epochs"):
     save_base_dir = os.path.join(cfg["logging"]["save_dir"], "ckpts", cfg["logging"]["exp_name"],"Best")
     os.makedirs(save_base_dir, exist_ok=True)
 
-    # Save best Jaccard model
     if ref_jaccard > best_jaccard:
         best_jaccard = ref_jaccard
         torch.save(model.state_dict(), os.path.join(save_base_dir, "best_jaccard.pt"))
-        print(f"✅ New best Jaccard: {best_jaccard:.4f} — saved best_jaccard.pt")
+        print(f"New best Jaccard: {best_jaccard:.4f} — saved best_jaccard.pt")
 
-    # Save best Dice model
     if ref_dice > best_dice:
         best_dice = ref_dice
         torch.save(model.state_dict(), os.path.join(save_base_dir, "best_dice.pt"))
-        print(f"✅ New best Dice: {best_dice:.4f} — saved best_dice.pt")
+        print(f"New best Dice: {best_dice:.4f} — saved best_dice.pt")
 
-
-    # === Step the scheduler ===
     if scheduler:
         if isinstance(scheduler, optim.lr_scheduler.ReduceLROnPlateau):
             scheduler.step(avg_train_loss)
         else:
             scheduler.step()
 
-    # === Save model ===
     if (epoch + 1) % cfg["logging"]["save_interval"] == 0:
         os.makedirs(cfg["logging"]["save_dir"], exist_ok=True)
         save_path = os.path.join(cfg["logging"]["save_dir"],"ckpts",cfg["logging"]["exp_name"],"ALL",f"model_epoch_{epoch+1}.pt")
         torch.save(model.state_dict(), save_path)
         print(f"Saved model to {save_path}")
 
-    # === Plot every 100 epochs ===
     if (epoch + 1) % 100 == 0:
         plt.figure(figsize=(10, 5))
         plt.subplot(1, 3, 1)
