@@ -1,0 +1,27 @@
+name: Refuge
+global_batch_size: 2
+img_size: 512
+num_channels: 3
+num_classes: 3
+ignore_index: 255
+class_names: ["background", "optic_disc", "optic_cup"]
+
+train_dataset:
+  _partial_: false
+  _target_: data.data.Refuge
+  root_dir: ${data_dir}/Refuge/
+  split: train
+  train_length: 400
+  aug_range: 2
+
+val_dataset:
+  _partial_: false
+  _target_: data.data.Refuge
+  root_dir: ${data_dir}/Refuge/
+  split: val
+
+test_dataset:
+  _partial_: false
+  _target_: data.data.Refuge
+  root_dir: ${data_dir}/Refuge/
+  split: test

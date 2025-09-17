@@ -1,0 +1,25 @@
+name: IDRiD
+global_batch_size: 2
+img_size: 512
+num_channels: 3
+num_classes: 5
+ignore_index: 0
+class_names: ["EX", "HE", "MA", "OD", "SE"]
+
+train_dataset:
+  _partial_: false #Use Partial to avoid instantiating dataset at config load time or to pass any args dymanically
+  _target_: data.data.IDRiD
+  root_dir: ${data_dir}/IDRiD/
+  split: train
+
+val_dataset:
+  _partial_: false
+  _target_: data.data.IDRiD
+  root_dir: ${data_dir}/IDRiD/
+  split: val
+
+test_dataset:
+  _partial_: false
+  _target_: data.data.IDRiD
+  root_dir: ${data_dir}/IDRiD/
+  split: test

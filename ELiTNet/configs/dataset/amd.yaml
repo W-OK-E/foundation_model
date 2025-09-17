@@ -1,0 +1,25 @@
+name: AMD
+global_batch_size: 2
+img_size: 512
+num_channels: 1
+num_classes: 5
+ignore_index: 0
+class_names: ["IRF", "SRF", "PED", "SHRM", "ISOS"]
+
+train_dataset:
+  _partial_: false
+  _target_: data.data.AMD
+  root_dir: ${data_dir}/AMD/
+  split: train
+
+val_dataset:
+  _partial_: false
+  _target_: data.data.AMD
+  root_dir: ${data_dir}/AMD/
+  split: val
+
+test_dataset:
+  _partial_: false
+  _target_: data.data.AMD
+  root_dir: ${data_dir}/AMD/
+  split: test

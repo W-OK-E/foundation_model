@@ -1,0 +1,27 @@
+name: ChaseDB
+global_batch_size: 2
+img_size: 512
+num_channels: 3
+num_classes: 2
+ignore_index: 0
+class_names: ["background", "vessel"]
+
+train_dataset:
+  _partial_: false
+  _target_: data.data.ChaseDB
+  root_dir: ${data_dir}/ChaseDB/
+  split: train
+  train_length: 20
+  aug_range: 2
+
+val_dataset:
+  _partial_: false
+  _target_: data.data.ChaseDB
+  root_dir: ${data_dir}/ChaseDB/
+  split: val
+
+test_dataset:
+  _partial_: false
+  _target_: data.data.ChaseDB
+  root_dir: ${data_dir}/ChaseDB/
+  split: test

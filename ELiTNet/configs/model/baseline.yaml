@@ -1,0 +1,7 @@
+defaults:
+  - network: elitnet
+  - loss: cross_entropy
+  - optimizer: adam
+  - lr_scheduler: warmup
+
+name: ELiTNet
