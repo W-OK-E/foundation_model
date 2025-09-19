@@ -3,8 +3,8 @@ import cv2
 import yaml
 import torch
 from torchvision import transforms
-from torchmetrics.segmentation import DiceScore
-from torchmetrics import JaccardIndex
+from torchmetrics.classification import Dice
+from torchmetrics.classification import JaccardIndex
 import numpy as np
 import matplotlib.pyplot as plt
 from pathlib import Path

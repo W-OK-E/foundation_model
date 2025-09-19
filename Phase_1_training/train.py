@@ -5,8 +5,8 @@ import torch
 import argparse
 import torch.nn as nn
 import torch.optim as optim
-from torchmetrics.segmentation import DiceScore
-from torchmetrics import JaccardIndex
+from torchmetrics.classification import Dice
+from torchmetrics.classification import JaccardIndex
 from torch.utils.data import DataLoader
 from torchvision import transforms
 import matplotlib.pyplot as plt
@@ -111,7 +111,7 @@ model = UNet(
 ).to(device)
 
 loss_fn = getattr(nn, cfg["loss"]["name"])()
-dice_score = DiceScore(num_classes = 6,average = "micro")
+dice_score = Dice(num_classes = 6,average = "micro")
 jack_index = JaccardIndex(task = 'multiclass',num_classes=6,average = "micro")
 
 optimizer_name = cfg["optimizer"]["name"]

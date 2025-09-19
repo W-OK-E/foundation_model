@@ -30,7 +30,7 @@ loss:
 # === Dataset ===
 dataset:
   name: "IDRID"
-  path: "/mnt/data/omkumar/foundation_phase1/Phase_1_Data/IDRID"
+  path: "/home/asavari/HRDecoder/data/IDRiD"
   image_size: [2944,4352]
   train_split: "train"
   test_split: "test"
@@ -41,7 +41,7 @@ dataset:
 
 validation:
   enabled: true
-  path: "/mnt/data/omkumar/foundation_phase1/Phase_1_Data/IDRID"
+  path: "/home/asavari/HRDecoder/data/IDRiD"
   batch_size: 1
   cache_dir: "preprocessed"
   log_interval: 10
