@@ -1,0 +1,1 @@
+tmux new-session -s seesh 'export CUDA_VISIBLE_DEVICES="0,1"; exec bash'

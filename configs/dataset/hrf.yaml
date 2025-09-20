@@ -8,20 +8,22 @@ class_names: ["background", "vessel"]
 
 train_dataset:
   _partial_: false
-  _target_: data.data.HRF
+  _target_: data.data.SEGDataset
   root_dir: ${data_dir}/HRF/
   split: train
-  train_length: 30
-  aug_range: 2
+  img_size : ${img_size}
+
 
 val_dataset:
   _partial_: false
-  _target_: data.data.HRF
+  _target_: data.data.SEGDataset
   root_dir: ${data_dir}/HRF/
   split: val
+  img_size : ${img_size}
 
 test_dataset:
   _partial_: false
-  _target_: data.data.HRF
+  _target_: data.data.SEGDataset
   root_dir: ${data_dir}/HRF/
   split: test
+  img_size : ${img_size}
