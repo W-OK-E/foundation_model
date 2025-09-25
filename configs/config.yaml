@@ -1,0 +1,79 @@
+defaults:
+  - model: baseline
+  - dataset: idrid
+  - accelerator: gpu
+  - _self_
+
+model:
+  train_metrics:
+    _target_: metrics.seg_metrics.SegmentationMetrics
+    num_classes: ${dataset.num_classes}
+    class_names: ${dataset.class_names}
+    ignore_index: ${dataset.ignore_index}
+
+  val_metrics:
+    _target_: metrics.seg_metrics.SegmentationMetrics
+    num_classes: ${dataset.num_classes}
+    class_names: ${dataset.class_names}
+    ignore_index: ${dataset.ignore_index}
+
+  test_metrics:
+    _target_: metrics.seg_metrics.SegmentationMetrics
+    num_classes: ${dataset.num_classes}
+    class_names: ${dataset.class_names}
+    ignore_index: ${dataset.ignore_index}
+
+datamodule:
+  _target_: data.datamodule.SegDataModule
+  train_dataset: ${dataset.train_dataset}
+  val_dataset: ${dataset.val_dataset}
+  test_dataset: ${dataset.test_dataset}
+  global_batch_size: ${dataset.global_batch_size}
+  num_workers: ${accelerator.num_workers}
+  num_nodes: ${accelerator.num_nodes}
+  num_devices: ${accelerator.devices}
+
+trainer:
+  _target_: pytorch_lightning.Trainer
+  devices: ${accelerator.devices}
+  accelerator: ${accelerator.accelerator}
+  strategy: ${accelerator.strategy}
+  num_nodes: ${accelerator.num_nodes}
+  precision: ${accelerator.precision}
+  max_epochs: 500
+  check_val_every_n_epoch: 10
+
+logger:
+  _target_: pytorch_lightning.loggers.WandbLogger
+  save_dir: ${root_dir}
+  name: ${experiment_name}
+  project: ELiTNet
+  log_model: False
+  offline: False
+  entity: oksure
+
+checkpoints:
+  _target_: pytorch_lightning.callbacks.ModelCheckpoint
+  dirpath: ${root_dir}/checkpoints/${experiment_name}
+  filename: 'best_dice_ckpt'
+  monitor: val/miou
+  save_last: True
+  save_top_k: 1
+  every_n_epochs: 1
+  mode: max
+  enable_version_counter: False
+  
+progress_bar:
+  _target_: pytorch_lightning.callbacks.TQDMProgressBar
+  refresh_rate: ${accelerator.progress_bar_refresh_rate}
+
+data_dir: ${root_dir}/datasets
+root_dir:  ${hydra:runtime.cwd}
+experiment_name: ${dataset.name}_${model.name}
+mode: train # change that to eval to do the testing
+num_classes: ${dataset.num_classes}
+hydra:
+  run:
+    dir: outputs/${hydra.job.name}/${now:%Y-%m-%d_%H-%M-%S}/${experiment_name}
+  job:
+    chdir: true

@@ -7,83 +7,87 @@ This repository contains code and configurations for training a foundation model
 
 The goal is to build a multi-modal,multi-task and maybe a multi-resolution model using a shared architecture (EliteNet), with considerations for varying input sizes and dataset characteristics.
 
+
+## Preparing Datasets
+
+SO far the dataset must be organized in a specific structure for the model to correctly load images and masks during training, validation, and testing, we hope to maintain the same uniform structure as we expand to different datasets and more modalities
+
+### Expected Folder Structure
+```
+datasets/
+└── IDRiD/
+├── images/
+│ ├── image_1.png
+│ ├── image_2.png
+│ └── ...
+├── masks/
+│ ├── image_1.png
+│ ├── image_2.png
+│ └── ...
+├── train.txt
+├── val.txt
+└── test.txt
+```
+- **images/**: Contains all input images.
+- **masks/**: Contains corresponding ground truth masks.
+- **train.txt**, **val.txt**, **test.txt**:  
+  Each of these text files contains the names of the samples to be used for the respective split.
+
 ---
 
-## Getting Started
+### Important Notes
+
+- The dataset folder (e.g., `IDRiD`) must be placed at the same level as the dataset’s `.yaml` config file.
+- Example entry in `train.txt`:
+```bash
+IDRiD_55.png
+IDRiD_56.png
+IDRiD_57.png
+IDRiD_58.png
+```
+## Getting Started with Training
+
+Follow these steps to get up and running with the project.
 
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/W-OK-E/foundation_model.git
-cd foundation_model
+git clone https://github.com/your-username/ELiTNet.git
+cd ELiTNet
 ```
 
-### 2. Set Up Environment
+### 2. Install UV
 
-We recommend using conda to create and manage the environment.
+Install uv via curl:
 ```bash
-conda create -n foundation_seg python=3.10 -y
-conda activate foundation_seg
-pip install -r requirements_clean.txt
+curl -LsSf https://astral.sh/uv/install.sh | sh
 ```
-### 3. Directory Structure
 
-To begin with, we are working with segmentation dataset, and for each dataset, the following folder structure needs to be adopted:
+This will install uv and set up the environment management system.
 
-```
-<Dataset_Name>
-    /train
-        /images
-        /labels
-    /test
-        /images
-        /labels
+### 3. Configure Weights & Biases (wandb)
 
+- Go to https://wandb.ai/ and create an account.
 
-Place your training and test data inside the corresponding folders.
-```
-### 4. Dataset Configuration
+- During account creation, you will be asked to create an organization.This organization name is your entity.
 
-- Each dataset requires a dedicated YAML configuration file under the configs/ directory.
-- Use configs/idrid.yaml as a reference.
-- Paths, image size, number of classes, and other dataset-specific parameters are defined here.
+- Create a new project in your WandB dashboard.The project name is your project.
 
-#### Input Shapes and Padding
-
-In each config file, there is a `image_size` attribute, notes on how to set that:
-
-EliteNet downsamples the input image 7 times, each by a factor of 2. Therefore, image dimensions must be a multiple of 128.
-
-| Dataset         | Original Shape  | Required (Padded) Shape |
-|------------------|------------------|--------------------------|
-| IDRID            | (2848, 4288)     | (2944, 4352)             |
-| US-Nerve Seg     | (580, 420)       | (640, 512)               |
-
-> Padding is applied using **reflect padding**.
-Therefore what you must do is read data sample from the dataset and check the Original Shape, then calculate the nearest multiple of 128, that becomes your `image_size` attribute in the config file, put that in the yaml file. YOU DONOT HAVE TO DO ANY PADDING OR TRANSFORMS YOURSELVES
-
-- If a dataset cannot be restructured into the expected folder layout (train/images, train/labels, etc.), a custom dataset/dataloader class must be written.
-
-### 5. Training
-
-Run training inside a tmux session to prevent loss on disconnection:
-
+- Open configs/config.yaml and update the logger parameters:
 ```bash
-tmux new -s <session_name> //Session Name can be anything
+logger:
+  entity: your-entity-name
+  project: your-project-name
 ```
-Then run:
-```bash
-python3 train.py --config configs/idrid.yaml
-```
-Replace the path to the config file depending on which dataset you're training on.
 
-#### Monitoring Training
-You can monitor the training process via the `utils/monitor.py` script but you need to verify that the script is indeed sending messages to your slack app.
-You can verify that by running some gibberish as:
+### 4. Login to WandB
+
+Run the training script using uv, which will prompt you to log in to wandb:
 ```bash
-python3 utils/monitor.py 'sfandfoanf'
+uv run train.py
 ```
-And you should get a message on your slack app.
-```bash
-python3 utils/monitor.py 'python3 train.py --config <path_to_config>'
-```
+Select Use an existing account when prompted.
+
+Paste your WandB API key (available in your WandB project dashboard).
+
+Once done, your training runs will be tracked in WandB automatically.

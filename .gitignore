@@ -1,37 +1,10 @@
-/Phase_1_Data
-/Phase_1_training/logs
-/Phase_1_training/model_test.ipynb
-/Phase_1_training/results
-# Python
-__pycache__/
-*.pyc
-*.pyo
 .venv/
-venv/
-
-# Data files
-*.bag
-*.csv
-*.h5
-*/raw_data/*
-*/sensor_recordings/*
-
-# Model checkpoints
-*.pth
-*.ckpt
-*/trained_models/*
-
-# IDE
-.vscode/
-.idea/
-*.swp
-
-# OS
-.DS_Store
-Thumbs.db
-
-# LaTeX
-*.aux
-*.log
-*.out
-*.toc
+backup/
+__pycache__/
+checkpoints/
+datasets/
+outputs/
+logs/
+wandb/
+lessons.md
+Phase_1_Data/
