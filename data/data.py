@@ -1,5 +1,6 @@
 import os
-import cv2
+import numpy as np
+import imageio.v3 as iio
 from torch.utils.data import Dataset
 from .transforms import get_transforms
 
@@ -17,14 +18,19 @@ def read_split(text_file: str):
     return image_names, ann_names
 
 class SEGDataset(Dataset):
-    def __init__(self, image_dir, ann_dir, image_names_list, ann_names_list, transform = None):
+    def __init__(self, root_dir, split = 'train', img_size = (512,512)):
         super(SEGDataset, self).__init__()
-        self.image_dir = image_dir
-        self.ann_dir = ann_dir
-        self.images = image_names_list
-        self.anns = ann_names_list
-        self.transform = transform
-    
+        self.image_dir = os.path.join(root_dir,'images')
+        self.ann_dir = os.path.join(root_dir,'masks')
+        self.images, self.anns = read_split(os.path.join(root_dir,f'{split}.txt'))
+        train_transforms, val_transforms = get_transforms(img_size = img_size)
+        if(split == "train"):
+            self.transform = train_transforms
+        elif(split == 'val'):
+            self.transform = val_transforms
+        else:
+            self.transform = None
+        
     def __len__(self):
         return len(self.images)
     
@@ -32,19 +38,19 @@ class SEGDataset(Dataset):
         image_path = os.path.join(self.image_dir, self.images[index])
         ann_path = os.path.join(self.ann_dir, self.anns[index])
         
-        image = cv2.imread(image_path)
-        if(image is not None):
-            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        else:
+        image = iio.imread(image_path)
+        if image is None:
             raise ValueError(f"Image not found at {image_path}")
+
+        mask = iio.imread(ann_path)
         
-        mask = cv2.imread(ann_path, cv2.IMREAD_GRAYSCALE)
-        if(mask is not None):
-            mask[mask > 1] = 1
-            mask[mask < 1] = 0
-        else:
+        if(mask is None):
             raise ValueError(f"Mask not found at {ann_path}")
         
+        if mask.ndim == 3:
+            mask = np.dot(mask[..., :3], [0.2989, 0.5870, 0.1140]).astype(np.uint8)
+
+        print("Checking the shape of the images:",mask.shape,image.shape)
         if self.transform is not None:
             transformer = self.transform(image = image, mask = mask)
             image, mask = transformer["image"], transformer["mask"]
@@ -52,135 +58,3 @@ class SEGDataset(Dataset):
         return image, mask
     
 
-class IDRiD(SEGDataset):
-    def __init__(self, root_dir, split = "train",img_size = 512, transform = None):
-        """
-        The root dir should contain two folders named "images" and "masks" 
-        and a text file named "train.txt" or "val.txt" or "test.txt"
-        depending on the split, which contains the train-val-test split information.
-        """
-        image_dir = os.path.join(root_dir, "images")
-        ann_dir = os.path.join(root_dir, "masks")
-        image_names, ann_names = read_split(os.path.join(root_dir, f"{split}.txt"))
-
-        train_transforms, val_transforms = get_transforms(img_size=512)
-
-        if split == "train":
-            super(IDRiD, self).__init__(image_dir, ann_dir, image_names, ann_names, train_transforms)
-        elif split == "val":
-            super(IDRiD, self).__init__(image_dir, ann_dir, image_names, ann_names, val_transforms)
-        elif split == "test":    
-            super(IDRiD, self).__init__(image_dir, ann_dir, image_names, ann_names, None)
-        else:
-            raise ValueError("Split must be one of 'train', 'val', or 'test'")  
-
-class AMD(SEGDataset):
-    def __init__(self, root_dir, split = "train", transform = None):
-        """
-        The root dir should contain two folders named "images" and "masks" 
-        and a text file named "train.txt" or "val.txt" or "test.txt"
-        depending on the split, which contains the train-val-test split information.
-        """
-        image_dir = os.path.join(root_dir, "images")
-        ann_dir = os.path.join(root_dir, "masks")
-        image_names, ann_names = read_split(os.path.join(root_dir, f"{split}.txt"))
-
-        train_transforms, val_transforms = get_transforms(img_size=512)
-
-        if split == "train":
-            super(AMD, self).__init__(image_dir, ann_dir, image_names, ann_names, train_transforms)
-        elif split == "val":
-            super(AMD, self).__init__(image_dir, ann_dir, image_names, ann_names, val_transforms)
-        elif split == "test":    
-            super(AMD, self).__init__(image_dir, ann_dir, image_names, ann_names, transform)
-        else:
-            raise ValueError("Split must be one of 'train', 'val', or 'test'")
-        
-class Refuge(SEGDataset):
-    def __init__(self, root_dir, split = "train", transform = None):
-        """
-        The root dir should contain two folders named "images" and "masks" 
-        and a text file named "train.txt" or "val.txt" or "test.txt"
-        depending on the split, which contains the train-val-test split information.
-        """
-        image_dir = os.path.join(root_dir, "images")
-        ann_dir = os.path.join(root_dir, "masks")
-        image_names, ann_names = read_split(os.path.join(root_dir, f"{split}.txt"))
-
-        train_transforms, val_transforms = get_transforms(img_size=512)
-
-        if split == "train":
-            super(Refuge, self).__init__(image_dir, ann_dir, image_names, ann_names, train_transforms)
-        elif split == "val":
-            super(Refuge, self).__init__(image_dir, ann_dir, image_names, ann_names, val_transforms)
-        elif split == "test":    
-            super(Refuge, self).__init__(image_dir, ann_dir, image_names, ann_names, transform)
-        else:
-            raise ValueError("Split must be one of 'train', 'val', or 'test'")
-        
-class ChaseDB(SEGDataset):
-    def __init__(self, root_dir, split = "train", transform = None):
-        """
-        The root dir should contain two folders named "images" and "masks" 
-        and a text file named "train.txt" or "val.txt" or "test.txt"
-        depending on the split, which contains the train-val-test split information.
-        """
-        image_dir = os.path.join(root_dir, "images")
-        ann_dir = os.path.join(root_dir, "masks")
-        image_names, ann_names = read_split(os.path.join(root_dir, f"{split}.txt"))
-
-        train_transforms, val_transforms = get_transforms(img_size=512)
-        
-        if split == "train":
-            super(ChaseDB, self).__init__(image_dir, ann_dir, image_names, ann_names, train_transforms)
-        elif split == "val":
-            super(ChaseDB, self).__init__(image_dir, ann_dir, image_names, ann_names, val_transforms)
-        elif split == "test":    
-            super(ChaseDB, self).__init__(image_dir, ann_dir, image_names, ann_names, transform)
-        else:
-            raise ValueError("Split must be one of 'train', 'val', or 'test'")
-
-class HRF(SEGDataset):
-    def __init__(self, root_dir, split = "train", transform = None):
-        """
-        The root dir should contain two folders named "images" and "masks" 
-        and a text file named "train.txt" or "val.txt" or "test.txt"
-        depending on the split, which contains the train-val-test split information.
-        """
-        image_dir = os.path.join(root_dir, "images")
-        ann_dir = os.path.join(root_dir, "masks")
-        image_names, ann_names = read_split(os.path.join(root_dir, f"{split}.txt"))
-
-        train_transforms, val_transforms = get_transforms(img_size=512)
-
-        if split == "train":
-            super(HRF, self).__init__(image_dir, ann_dir, image_names, ann_names, train_transforms)
-        elif split == "val":
-            super(HRF, self).__init__(image_dir, ann_dir, image_names, ann_names, val_transforms)
-        elif split == "test":    
-            super(HRF, self).__init__(image_dir, ann_dir, image_names, ann_names, transform)
-        else:
-            raise ValueError("Split must be one of 'train', 'val', or 'test'")
-        
-
-class DRIVE(SEGDataset):
-    def __init__(self, root_dir, split = "train", transform = None):
-        """
-        The root dir should contain two folders named "images" and "masks" 
-        and a text file named "train.txt" or "val.txt" or "test.txt"
-        depending on the split, which contains the train-val-test split information.
-        """
-        image_dir = os.path.join(root_dir, "images")
-        ann_dir = os.path.join(root_dir, "masks")
-        image_names, ann_names = read_split(os.path.join(root_dir, f"{split}.txt"))
-
-        train_transforms, val_transforms = get_transforms(img_size=512)
-
-        if split == "train":
-            super(DRIVE, self).__init__(image_dir, ann_dir, image_names, ann_names, train_transforms)
-        elif split == "val":
-            super(DRIVE, self).__init__(image_dir, ann_dir, image_names, ann_names, val_transforms)
-        elif split == "test":    
-            super(DRIVE, self).__init__(image_dir, ann_dir, image_names, ann_names, transform)
-        else:
-            raise ValueError("Split must be one of 'train', 'val', or 'test'")
