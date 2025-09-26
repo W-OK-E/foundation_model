@@ -20,6 +20,11 @@ class ElitLightModel(L.LightningModule):
         image,gt_mask = batch
         image,gt_mask = image.float(), gt_mask.long()
         pred = self.model(image)
+        
+        # import ipdb
+        # print("Ground Truth Mask shape:",gt_mask.shape)
+        # ipdb.set_trace()
+        
         loss = self.loss(pred, gt_mask)
         self.train_metrics.update(pred, gt_mask)
         self.log("train/loss", loss, sync_dist=True, on_step=True, on_epoch=True)
@@ -36,9 +41,16 @@ class ElitLightModel(L.LightningModule):
 
     @torch.no_grad()
     def validation_step(self, batch:list):
+        print("Validation Step")
         image,gt_mask = batch
         image,gt_mask = image.float(), gt_mask.long()
         pred = self.model(image)    
+        # print("Prediction shape:",pred.shape)
+        
+        # import ipdb
+        # print("Ground Truth Mask shape:",gt_mask.shape)
+        # ipdb.set_trace()
+        
         loss = self.loss(pred, gt_mask)
         self.val_metrics.update(pred, gt_mask)
         self.log("val/loss", loss, sync_dist=True, on_step=False, on_epoch=True)

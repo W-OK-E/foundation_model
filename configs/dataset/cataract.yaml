@@ -11,18 +11,18 @@ train_dataset:
   _target_: data.data.SEGDataset
   root_dir: ${data_dir}/Cataracts/
   split: train
-  img_size : ${img_size}
+  img_size : ${..img_size}
 
 val_dataset:
   _partial_: false
   _target_: data.data.SEGDataset
   root_dir: ${data_dir}/Cataracts/
   split: val
-  img_size : ${img_size}
+  img_size : ${..img_size}
 
 test_dataset:
   _partial_: false
   _target_: data.data.SEGDataset
   root_dir: ${data_dir}/Cataracts/
-  split: test
-  img_size : ${img_size}
+  split: val
+  img_size : ${..img_size}
