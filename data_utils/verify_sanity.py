@@ -1,9 +1,10 @@
 import os
 import argparse
 import numpy as np
+from tqdm import tqdm
 from PIL import Image
 
-def count_segmentation_classes(mask_dir, exts=(".png", ".jpg", ".bmp")):
+def count_segmentation_classes(mask_dir, exts=(".png", ".jpg", ".bmp",".tif")):
     """
     Reads segmentation mask images in a directory and determines the number of unique classes.
     
@@ -16,7 +17,7 @@ def count_segmentation_classes(mask_dir, exts=(".png", ".jpg", ".bmp")):
     """
     unique_classes = set()
 
-    for fname in os.listdir(mask_dir):
+    for fname in tqdm(os.listdir(mask_dir)):
         if fname.lower().endswith(exts):
             path = os.path.join(mask_dir, fname)
             mask = np.array(Image.open(path))

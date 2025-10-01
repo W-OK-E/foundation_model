@@ -100,6 +100,8 @@ def main(cfg):
         trainer.fit(model, datamodule=datamodule, ckpt_path=ckpt_path)
     elif cfg.mode == "eval":
         trainer.test(model, datamodule=datamodule)
+    elif cfg.mode == "predict":
+        trainer.predict(model, datamodule=datamodule)
 
 
 if __name__ == "__main__":

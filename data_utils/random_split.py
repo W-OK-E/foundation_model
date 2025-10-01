@@ -18,7 +18,8 @@ def split_dataset(
     train_ratio=0.7, 
     val_ratio=0.15, 
     test_ratio=0.15,
-    output_dir="."
+    output_dir=".",
+    viz_ratio=0.05
 ):
     images_dir = os.path.join(directory,'images')
     mask_dir = os.path.join(directory,'masks')
@@ -35,6 +36,7 @@ def split_dataset(
         return
 
     # Shuffle the files
+    random.seed(42)
     random.shuffle(img_files)
 
     # Compute split indices
@@ -57,6 +59,15 @@ def split_dataset(
         f.write("\n".join(test_files))
     
     print(f"Done! Saved {len(train_files)} train, {len(val_files)} val, and {len(test_files)} test files.")
+
+    viz_size = int(viz_ratio * total)
+
+    viz_files = random.sample(img_files, viz_size)
+
+    with open(os.path.join(output_dir, "viz.txt"), "w") as f:
+        f.write("\n".join(viz_files))
+    
+    print(f"Saved {len(viz_files)} files to viz.txt.")
 
     # Inspect the first image and save its shape
     first_image_path = os.path.join(images_dir, img_files[0])

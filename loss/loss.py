@@ -38,9 +38,9 @@ class FocalLoss(nn.Module):
 
 
 
-class weighted_maskrcnn_loss(nn.Module):
+class Weighted_Maskrcnn_loss(nn.Module):
     def __init__(self):
-        super(weighted_maskrcnn_loss, self).__init__()
+        super(Weighted_Maskrcnn_loss, self).__init__()
 
 
     def project_masks_on_boxes(self,gt_masks: torch.Tensor,
@@ -86,3 +86,54 @@ class weighted_maskrcnn_loss(nn.Module):
             weight
         )
         return mask_loss
+
+
+#Was used in Sasvi
+class Mask2FormerLoss(nn.Module):
+    def __init__(self, classification_loss_fn: nn.Module, mask_loss_fn: nn.Module):
+        """
+        Args:
+            classification_loss_fn: loss function for classification (e.g., nn.CrossEntropyLoss)
+            mask_loss_fn: loss function for masks (e.g., nn.BCEWithLogitsLoss or weighted_maskrcnn_loss)
+        """
+        super(Mask2FormerLoss, self).__init__()
+        self.classification_loss_fn = classification_loss_fn
+        self.mask_loss_fn = mask_loss_fn
+
+    def forward(self, pred_class_logits, pred_masks, gt_labels, gt_masks, matches):
+        """
+        Compute classification and mask losses based on Hungarian matching.
+
+        Args:
+            pred_class_logits (torch.Tensor): [num_queries, num_classes], class logits.
+            pred_masks (torch.Tensor): [num_queries, height, width], predicted masks.
+            gt_labels (torch.Tensor): [num_objects], ground truth class labels.
+            gt_masks (torch.Tensor): [num_objects, height, width], ground truth masks.
+            matches (List[Tuple[int, int]]): List of matched indices (prediction_idx, ground_truth_idx).
+
+        Returns:
+            torch.Tensor: Total loss.
+        """
+        if len(matches) == 0:
+            # No matches, return zero loss
+            return torch.tensor(0.0, requires_grad=True, device=pred_class_logits.device)
+
+        matched_pred_indices, matched_gt_indices = zip(*matches)
+
+        # Matched predictions and ground truth
+        matched_pred_class_logits = pred_class_logits[list(matched_pred_indices)]
+        matched_pred_masks = pred_masks[list(matched_pred_indices)]
+        matched_gt_labels = gt_labels[list(matched_gt_indices)]
+        matched_gt_masks = gt_masks[list(matched_gt_indices)]
+
+        # Ensure gt_masks is float for BCEWithLogitsLoss
+        matched_gt_masks = matched_gt_masks.float()
+
+        # Compute classification loss
+        classification_loss = self.classification_loss_fn(matched_pred_class_logits, matched_gt_labels)
+
+        # Compute mask loss
+        mask_loss = self.mask_loss_fn(matched_pred_masks, matched_gt_masks)
+
+        return classification_loss + mask_loss
+

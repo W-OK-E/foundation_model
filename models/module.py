@@ -85,6 +85,18 @@ class ElitLightModel(L.LightningModule):
                 on_epoch=True,
             )
     
+    @torch.no_grad()
+    def predict_step(self, batch, batch_idx: int, dataloader_idx: int = 0):
+        image, image_id = batch
+        image = image.float()
+        pred = self.model(image)
+        pred = torch.argmax(pred, dim=1).cpu().numpy().astype("uint8")
+        #Converting each mask to PIL Image and then saving it.
+        for i in range(pred.shape[0]):
+            mask = Image.fromarray(pred[i])
+            mask.save(f"pred_{image_id[i]}.png")
+        return pred
+
     def configure_optimizers(self):
         #So Here the weight decay is not applied to LayerNorm and Biases.
         if self.cfg.optimizer.exclude_bias_from_wd:
