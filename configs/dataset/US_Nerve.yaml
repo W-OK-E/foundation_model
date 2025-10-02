@@ -1,7 +1,11 @@
 name: US_Nerve
 global_batch_size: 16
 img_size: [420, 580]
+<<<<<<< HEAD
 num_channels: 3
+=======
+num_channels: 1
+>>>>>>> 15e0efe (Changes from 23)
 num_classes: 2
 ignore_index: 0
 class_names: ["BG","Nerves"]

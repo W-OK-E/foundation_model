@@ -43,12 +43,13 @@ class ElitLightModel(L.LightningModule):
     def validation_step(self, batch:list):
         print("Validation Step")
         image,gt_mask = batch
-        image,gt_mask = image.float(), gt_mask.long()
+        #Please apply appropriate type casting in your respective loss functions if needed donot chang here.
+        image,gt_mask = image.float(), gt_mask.float() 
         pred = self.model(image)    
-        # print("Prediction shape:",pred.shape)
         
         # import ipdb
         # print("Ground Truth Mask shape:",gt_mask.shape)
+        # print("Data types:",gt_mask.dtype,pred.dtype)
         # ipdb.set_trace()
         
         loss = self.loss(pred, gt_mask)

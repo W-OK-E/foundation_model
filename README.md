@@ -92,6 +92,7 @@ Paste your WandB API key (available in your WandB project dashboard).
 
 Once done, your training runs will be tracked in WandB automatically.
 
+<<<<<<< HEAD
 ## Metrics upon completion of training
 
 Metrics will be calculated automatically once training finishes options for the same are as follows:
@@ -112,3 +113,10 @@ To change output subdir:
 ```bash
 uv run train.py report.output_subdir=metrics
 ```
+=======
+### 5. A Note on tmux sessions
+
+Tmux sesions are named after the dataset, and they include a suffix which denotes which experiment
+was run, for e.g:
+idrid_set2 means the dataset is idrid_set2 it means the second row of experiment is running for idrid dataset
+>>>>>>> 15e0efe (Changes from 23)

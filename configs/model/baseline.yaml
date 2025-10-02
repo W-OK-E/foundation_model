@@ -1,7 +1,7 @@
 defaults:
   - network: elitnet
-  - loss: cross_entropy
+  - loss: focal
   - optimizer: adam
   - lr_scheduler: warmup
 
-name: ELiTNet
+name: ELiTNet_US_Nerve_set2

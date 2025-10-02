@@ -1,5 +1,6 @@
 import os
 import argparse
+from tqdm import tqdm
 import numpy as np
 from tqdm import tqdm
 from PIL import Image

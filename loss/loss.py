@@ -6,15 +6,23 @@ from torchvision.ops import roi_align
 
 
 class FocalLoss(nn.Module):
-    def __init__(self, gamma=0, alpha=None, size_average=True):  
+    def __init__(self, gamma=0, alpha=None, size_average=True, ignore_index=None):  
         super(FocalLoss, self).__init__()
         self.gamma = gamma
         self.alpha = alpha
         if isinstance(alpha, (float, int)): self.alpha = torch.Tensor([alpha, 1 - alpha])
         if isinstance(alpha, list): self.alpha = torch.Tensor(alpha)
         self.size_average = size_average
+        self.ignore_index = ignore_index
 
     def forward(self, input, target):
+        target = target.long()
+        
+        # if self.ignore_index is not None:
+        #     mask = target != self.ignore_index
+        #     input = input[mask]
+        #     target = target[mask]
+
         if input.dim()>2:
             input = input.view(input.size(0), input.size(1), -1)  # N,C,H,W => N,C,H*W
             input = input.transpose(1, 2)                         # N,C,H*W => N,H*W,C
@@ -36,6 +44,7 @@ class FocalLoss(nn.Module):
         if self.size_average: return loss.mean()
         else: return loss.sum()
 
+<<<<<<< HEAD
 
 
 class Weighted_Maskrcnn_loss(nn.Module):
@@ -137,3 +146,74 @@ class Mask2FormerLoss(nn.Module):
 
         return classification_loss + mask_loss
 
+=======
+class BCEDiceLoss(nn.Module):
+    def __init__(self, ignore_index=None):
+        super().__init__()
+        self.ignore_index = ignore_index
+
+    def forward(self, pred, target):
+        """
+        pred: (Batch, Classes, Height, Width) - raw logits
+        target: (Batch, Height, Width) - class indices (Long) or (Batch, Classes, Height, Width) for multi-label
+        """
+        # Convert target to float
+        if target.dtype != torch.float32:
+            target = target.float()
+        
+        # For multi-class segmentation, you need to handle this differently
+        # Option 1: If binary segmentation (2 classes), take channel 1
+        if pred.shape[1] == 2:
+            # Use only the positive class logits
+            # input = pred[:, 1, :, :]  # Shape: (B, H, W)
+            input = pred
+            # BCE with logits
+            bce = F.binary_cross_entropy_with_logits(input, target)
+            
+            # Dice loss
+            smooth = 1e-5
+            input_sigmoid = torch.sigmoid(input)
+            num = target.size(0)
+            input_flat = input_sigmoid.view(num, -1)
+            target_flat = target.view(num, -1)
+            intersection = (input_flat * target_flat).sum(1)
+            dice = (2. * intersection + smooth) / (input_flat.sum(1) + target_flat.sum(1) + smooth)
+            dice_loss = 1 - dice.mean()
+            
+            return 0.5 * bce + dice_loss
+        
+        # Option 2: If multi-class segmentation (>2 classes)
+        else:
+            # Convert target from class indices to one-hot
+            num_classes = pred.shape[1]
+            target_one_hot = F.one_hot(target.long(), num_classes=num_classes)
+            target_one_hot = target_one_hot.permute(0, 3, 1, 2).float()  # (B, C, H, W)
+            
+            # BCE with logits
+            bce = F.binary_cross_entropy_with_logits(pred, target_one_hot)
+            
+            # Dice loss
+            smooth = 1e-5
+            pred_sigmoid = torch.sigmoid(pred)
+            num = target.size(0)
+            pred_flat = pred_sigmoid.view(num, num_classes, -1)
+            target_flat = target_one_hot.view(num, num_classes, -1)
+            intersection = (pred_flat * target_flat).sum(2)
+            dice = (2. * intersection + smooth) / (pred_flat.sum(2) + target_flat.sum(2) + smooth)
+            dice_loss = 1 - dice.mean()
+            
+            return 0.5 * bce + dice_loss
+
+#The custom implementation is there to just have greater control and understanding of the 
+#data type
+class CELoss(nn.Module):
+    def __init__(self,ignore_index=None):
+        super().__init__()
+        self.ignore_index = ignore_index
+        self.ce = nn.CrossEntropyLoss(ignore_index=ignore_index)
+
+    def forward(self, input, target):
+        if(target.dtype != torch.long):
+            target = target.long()
+        return self.ce(input, target)
+>>>>>>> 15e0efe (Changes from 23)

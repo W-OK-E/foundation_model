@@ -30,6 +30,7 @@ def resize_images(input_folder, output_folder, size=(256, 256)):
 
 
 if __name__ == "__main__":
+    #NOTE - If your target image's shape is 360 x 640(cv2.imread() Height x Width), then use size = (640, 360)
     parser = argparse.ArgumentParser(description="Resize all images in a folder.")
     parser.add_argument("--dir", required=True, type=str,
                         help="The folder that contains the images to be resized")
