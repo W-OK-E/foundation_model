@@ -2,6 +2,7 @@ defaults:
   - model: baseline
   - dataset: idrid
   - accelerator: gpu
+  - report: seg
   - _self_
 
 model:

@@ -91,3 +91,24 @@ Select Use an existing account when prompted.
 Paste your WandB API key (available in your WandB project dashboard).
 
 Once done, your training runs will be tracked in WandB automatically.
+
+## Metrics upon completion of training
+
+Metrics will be calculated automatically once training finishes options for the same are as follows:
+
+To disable metric calculation
+```bash
+uv run train.py report.enabled=false
+```
+To change split: 
+```bash
+uv run train.py report.split=val
+```
+To choose metrics(by default all are being calculated)
+```bash
+uv run train.py report.metrics=[miou,mean_dice,per_class_iou]
+```
+To change output subdir: 
+```bash
+uv run train.py report.output_subdir=metrics
+```
