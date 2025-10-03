@@ -44,7 +44,6 @@ class FocalLoss(nn.Module):
         if self.size_average: return loss.mean()
         else: return loss.sum()
 
-<<<<<<< HEAD
 
 
 class Weighted_Maskrcnn_loss(nn.Module):
@@ -146,7 +145,6 @@ class Mask2FormerLoss(nn.Module):
 
         return classification_loss + mask_loss
 
-=======
 class BCEDiceLoss(nn.Module):
     def __init__(self, ignore_index=None):
         super().__init__()
@@ -216,4 +214,3 @@ class CELoss(nn.Module):
         if(target.dtype != torch.long):
             target = target.long()
         return self.ce(input, target)
->>>>>>> 15e0efe (Changes from 23)

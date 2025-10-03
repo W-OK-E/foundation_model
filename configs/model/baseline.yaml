@@ -4,4 +4,4 @@ defaults:
   - optimizer: adam
   - lr_scheduler: warmup
 
-name: ELiTNet_US_Nerve_set2
+name: ELiTNet
