@@ -26,7 +26,7 @@ class SEGDataset(Dataset):
         train_transforms, val_transforms = get_transforms(img_size = img_size)
         if(split == "train"):
             self.transform = train_transforms
-        elif(split == 'val'):
+        elif(split == 'val' or split == "test"):
             self.transform = val_transforms
         else:
             self.transform = None

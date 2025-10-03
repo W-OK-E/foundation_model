@@ -5,6 +5,7 @@ import hydra
 import wandb
 import json
 import csv
+import torch
 
 from shutil import copyfile
 from omegaconf import OmegaConf
@@ -39,8 +40,8 @@ def wandb_init(cfg):
 def load_model(cfg, dict_config, wandb_id, callbacks):
     directory = cfg.checkpoints.dirpath
     #This will come in play when we want to test/evaluate the model
-    if(cfg.mode == "eval" and isfile(join(directory, "best_dice.ckpt"))):
-        checkpoint_path = join(directory, "best_dice.ckpt")
+    if(cfg.mode == "eval" and isfile(join(directory, "best_dice_dice.ckpt"))):
+        checkpoint_path = join(directory, "best_dice_dice.ckpt")
         logger = instantiate(cfg.logger, id=wandb_id, resume="allow")
         model = ElitLightModel.load_from_checkpoint(checkpoint_path, cfg=cfg.model)
         print(f"Loading form checkpoint ... {checkpoint_path}")
@@ -52,7 +53,7 @@ def load_model(cfg, dict_config, wandb_id, callbacks):
         model = ElitLightModel.load_from_checkpoint(checkpoint_path, cfg=cfg.model)
         print(f"Loading form checkpoint ... {checkpoint_path}")
     else:
-        ckpt_path = None
+        checkpoint_path = None
         logger = instantiate(cfg.logger, id=wandb_id, resume="allow")
         log_dict = {"model": dict_config["model"], "dataset": dict_config["dataset"]}
         logger._wandb_init.update({"config": log_dict})
@@ -62,7 +63,7 @@ def load_model(cfg, dict_config, wandb_id, callbacks):
     trainer = instantiate(
         trainer, strategy=strategy, logger=logger, callbacks=callbacks,
     )
-    return trainer, model, ckpt_path
+    return trainer, model, checkpoint_path
 
 def project_init(cfg):
     print("Working directory set to {}".format(os.getcwd()))
