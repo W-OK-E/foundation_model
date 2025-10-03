@@ -30,7 +30,7 @@ def visualize(model, dataset_name, out_dir, device="cpu"):
     img_dir = f"datasets/{dataset_name}/images"
     mask_dir = f"datasets/{dataset_name}/masks"
 
-    num_classes = detect_num_classes(mask_dir)
+    num_classes = int(detect_num_classes(mask_dir))
     colors = random_colors(num_classes)
 
     with open(viz_file, "r") as f:

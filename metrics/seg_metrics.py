@@ -46,6 +46,11 @@ class SegmentationMetrics(Metric):
 
     def compute(self):
         conf_mat = self.conf_matrix
+        total = np.sum(conf_mat)
+
+        TP = np.diag(conf_mat)
+        FP = np.sum(conf_mat, axis=0) - TP
+        FN = np.sum(conf_mat, axis=1) - TP
 
         # mIoU
         den_iou = np.sum(conf_mat, axis=1) + np.sum(conf_mat, axis=0) - np.diag(conf_mat)
@@ -67,13 +72,32 @@ class SegmentationMetrics(Metric):
         )
         mean_dice = np.nanmean(per_class_dice) * 100
 
+        # mAUPR
+        precision = np.divide(TP, TP+FP, out=np.zeros_like(TP, dtype=float), where=(TP+FP)!=0)
+        recall = np.divide(TP, TP+FN, out=np.zeros_like(TP, dtype=float), where=(TP+FN)!=0)
+        maupr = np.nanmean(precision * recall) * 100
+
+        # mF
+        per_class_f = np.divide(
+            2*precision*recall, precision+recall,
+            out=np.zeros_like(precision, dtype=float),
+            where=(precision+recall)!=0
+        )
+        mf = np.nanmean(per_class_f) * 100
+
         output = {
             "miou": miou,
-            "mean_dice": mean_dice
+            "mean_dice": mean_dice,
+            "mf": mf,
+            "maupr": maupr
         }
+
         for class_id in range(self.num_classes):
             output[f'class_{class_id}_iou'] = per_class_iou[class_id] * 100
             output[f'class_{class_id}_dice'] = per_class_dice[class_id] * 100
+            output[f'class_{class_id}_f'] = per_class_f[class_id] * 100
+            output[f'class_{class_id}_precision'] = precision[class_id] * 100
+            output[f'class_{class_id}_recall'] = recall[class_id] * 100
 
         # Reset confusion matrix after compute
         self.conf_matrix = np.zeros((self.num_classes, self.num_classes))
