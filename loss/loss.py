@@ -25,10 +25,15 @@ class FocalLoss(nn.Module):
 
         if input.dim()>2:
             input = input.view(input.size(0), input.size(1), -1)  # N,C,H,W => N,C,H*W
+            print("After First Step:",input.shape)
             input = input.transpose(1, 2)                         # N,C,H*W => N,H*W,C
+            print("After Transpose:",input.shape)
             input = input.contiguous().view(-1, input.size(2))    # N,H*W,C => N*H*W,C
+            print("End of the loop:",input.shape)
+            
+        print("Input was fiddled with:",input.shape)
         target = target.view(-1, 1)
-
+        print("Target was fiddled with:",target.shape)
         logpt = F.log_softmax(input, dim=1)
         logpt = logpt.gather(1,target)
         logpt = logpt.view(-1)

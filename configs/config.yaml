@@ -41,7 +41,7 @@ trainer:
   strategy: ${accelerator.strategy}
   num_nodes: ${accelerator.num_nodes}
   precision: ${accelerator.precision}
-  max_epochs: 500
+  max_epochs: 2
   check_val_every_n_epoch: 10
 
 logger:
@@ -68,6 +68,7 @@ progress_bar:
   _target_: pytorch_lightning.callbacks.TQDMProgressBar
   refresh_rate: ${accelerator.progress_bar_refresh_rate}
 
+run_id : dummy
 data_dir: ${root_dir}/datasets
 root_dir:  ${hydra:runtime.cwd}
 experiment_name: ${dataset.name}_${model.name}

@@ -4,4 +4,4 @@ defaults:
   - optimizer: adam
   - lr_scheduler: warmup
 
-name: ELiTNet
+name: Dummy
