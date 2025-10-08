@@ -80,14 +80,7 @@ def project_init(cfg):
     # Create a per-run subdirectory inside the configured checkpoint dir so
     # multiple runs on the same dataset+model don't overwrite each other.
     base_dir = cfg.checkpoints.dirpath
-    # Try to assemble a human-readable run id from dataset and model names
-    ds_name = getattr(cfg.dataset, "name", "dataset")
-    model_name = getattr(cfg.model, "name", None) or getattr(cfg.model, "_name", "model")
-    # short random suffix for uniqueness
-    ts = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
-    rand = hashlib.sha1(f"{random.getrandbits(64)}{os.getpid()}".encode()).hexdigest()[:6]
-    run_id = f"{ds_name}_{model_name}_{ts}_{rand}"
-    directory = join(base_dir, run_id)
+    directory = base_dir
     os.makedirs(directory, exist_ok=True)
     # copy the active hydra config for reproducibility
     try:
@@ -95,10 +88,6 @@ def project_init(cfg):
     except Exception:
         # best-effort: don't crash if hydra metadata isn't present
         pass
-    # update cfg so other functions use the run-specific directory
-    cfg.checkpoints.dirpath = directory
-    # also expose run id on cfg for later use
-    cfg.run_id = run_id
 
 
 def callback_init(cfg):
@@ -263,6 +252,7 @@ def _write_run_status(directory, status, details=None):
                 f.write(str(details))
     except Exception:
         # best-effort, do not crash training only for status file write
+        print("Failed to Write status")
         pass
 
 
@@ -327,8 +317,7 @@ def run_post_training_report(cfg, model, datamodule):
     for split in ["test","train","val"]:
         report_cfg.split = split
         results = _compute_segmentation_report(model, datamodule, report_cfg)
-        run_dir = os.getcwd()
-        out_dir = os.path.join(run_dir, report_cfg.output_subdir)
+        out_dir = os.path.join(cfg.checkpoints.dirpath,"reports")
         os.makedirs(out_dir, exist_ok=True)
 
         # File stems based on experiment name and split

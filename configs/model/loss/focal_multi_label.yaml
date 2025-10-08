@@ -1,0 +1,8 @@
+instance:
+  _target_: loss.focal_multi_label.FocalLoss 
+  gamma: 2.0
+  alpha: 0.25
+  reduction: mean
+  task_type: multi-label
+  num_classes: ${dataset}.num_classes
+

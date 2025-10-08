@@ -68,7 +68,6 @@ progress_bar:
   _target_: pytorch_lightning.callbacks.TQDMProgressBar
   refresh_rate: ${accelerator.progress_bar_refresh_rate}
 
-run_id : dummy
 data_dir: ${root_dir}/datasets
 root_dir:  ${hydra:runtime.cwd}
 experiment_name: ${dataset.name}_${model.name}
