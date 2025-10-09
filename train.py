@@ -1,15 +1,12 @@
 import os
-import sys
-import subprocess
 import hydra
 import wandb
 import json
 import csv
 import torch
+import warnings
 import traceback
 from datetime import datetime
-import hashlib
-import random
 from PIL import Image
 import numpy as np
 import matplotlib
@@ -23,6 +20,33 @@ from hydra.utils import instantiate
 from models.module import ElitLightModel
 from lightning_fabric.utilities.rank_zero import _get_rank
 from pytorch_lightning.callbacks import LearningRateMonitor
+from matplotlib.colors import ListedColormap, BoundaryNorm
+
+warnings.filterwarnings("ignore")
+
+#Sample colors to pick from while visualizations
+COLORS = [
+    "black",        # 0
+    "red",          # 1
+    "green",        # 2
+    "blue",         # 3
+    "yellow",       # 4
+    "magenta",      # 5
+    "cyan",         # 6
+    "orange",       # 7
+    "purple",       # 8
+    "brown",        # 9
+    "pink",         # 10
+    "lime",         # 11
+    "teal",         # 12
+    "navy",         # 13
+    "maroon",       # 14
+    "olive",        # 15
+    "coral",        # 16
+    "gold",         # 17
+    "turquoise",    # 18
+    "violet"        # 19
+]
 
 
 # Registering the "eval" resolver allows for advanced config, i.e. basically the values can be dynamic now
@@ -109,7 +133,7 @@ def hydra_boilerplate(cfg):
     dict_config = OmegaConf.to_container(cfg, resolve=True)
     callbacks = callback_init(cfg)
     datamodule = init_datamodule(cfg)
-    if(cfg.mode == "train"):
+    if(cfg.mode != "test"):
         project_init(cfg)
     wandb_id = wandb_init(cfg)
     trainer, model, ckpt_path = load_model(cfg, dict_config, wandb_id, callbacks)
@@ -208,30 +232,51 @@ def _viz_from_split(project_root, dataset_name, cfg, model=None):
                 pred_arr = None
 
         # Create figure
-        fig, axes = plt.subplots(1, 3, figsize=(12, 4))
-        # Original
+
+        # Example class names and colors
+        class_names = cfg.dataset.class_names
+        colors = COLORS[:len(class_names)]
+
+        # Create a discrete colormap
+        cmap = ListedColormap(colors)
+        norm = BoundaryNorm(np.arange(len(class_names) + 1) - 0.5, len(class_names))
+
+        # Use GridSpec to allocate space: 3 images + 1 for colorbar
+        fig = plt.figure(figsize=(16, 4))
+        gs = fig.add_gridspec(1, 4, width_ratios=[1,1,1,0.1], wspace=0.3)
+
+        # --- Original ---
+        ax0 = fig.add_subplot(gs[0, 0])
         if orig is not None:
-            axes[0].imshow(np.array(orig))
+            ax0.imshow(np.array(orig))
         else:
-            axes[0].text(0.5, 0.5, "Original not found", ha="center")
-        axes[0].set_title("Original")
-        axes[0].axis("off")
+            ax0.text(0.5, 0.5, "Original not found", ha="center")
+        ax0.set_title("Original")
+        ax0.axis("off")
 
-        # Mask
+        # --- Mask ---
+        ax1 = fig.add_subplot(gs[0, 1])
         if mask is not None:
-            axes[1].imshow(np.array(mask))
+            im_mask = ax1.imshow(np.array(mask), cmap=cmap, norm=norm)
         else:
-            axes[1].text(0.5, 0.5, "Mask not found", ha="center")
-        axes[1].set_title("Original Mask")
-        axes[1].axis("off")
+            ax1.text(0.5, 0.5, "Mask not found", ha="center")
+        ax1.set_title("Ground Truth Mask")
+        ax1.axis("off")
 
-        # Prediction
+        # --- Prediction ---
+        ax2 = fig.add_subplot(gs[0, 2])
         if pred_arr is not None:
-            axes[2].imshow(pred_arr)
+            im_pred = ax2.imshow(pred_arr, cmap=cmap, norm=norm)
         else:
-            axes[2].text(0.5, 0.5, "Prediction not available", ha="center")
-        axes[2].set_title("Prediction")
-        axes[2].axis("off")
+            ax2.text(0.5, 0.5, "Prediction not available", ha="center")
+        ax2.set_title("Prediction")
+        ax2.axis("off")
+
+        # --- Colorbar in separate axis ---
+        ax_cbar = fig.add_subplot(gs[0, 3])
+        cb = plt.colorbar(im_mask, cax=ax_cbar, ticks=range(len(class_names)))
+        cb.ax.set_yticklabels(class_names)
+        cb.set_label("Classes")
 
         out_path = join(out_dir, f"viz_{i:03d}_{os.path.splitext(os.path.basename(fname))[0]}.png")
         fig.tight_layout()

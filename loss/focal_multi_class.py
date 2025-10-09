@@ -73,6 +73,3 @@ class FocalLoss(nn.Module):
         elif self.reduction == 'sum':
             return loss.sum()
         return loss
-
-
-    def multi_class_focal_loss(self, inputs, targets):

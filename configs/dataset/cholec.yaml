@@ -8,6 +8,8 @@ class_names: ["Black Background","Abdominal Wall","Liver",
             "Gastrointestinal Tract","Fat","Grasper","Connective Tissue",
             "Blood","Cystic Duct","L-hook Electrocautery",
             "Gallbladder","Hepatic Vein"]
+mean_per_channel: [0.38424233, 0.23087874, 0.22147045]
+std_per_channel: [0.26418403, 0.22233559, 0.20266329]
 
 train_dataset:
   _partial_: false
@@ -15,6 +17,8 @@ train_dataset:
   root_dir: ${data_dir}/Cholec/
   split: train
   img_size : ${..img_size}
+  mean: ${..mean_per_channel}
+  std: ${..std_per_channel}
 
 val_dataset:
   _partial_: false
@@ -22,6 +26,8 @@ val_dataset:
   root_dir: ${data_dir}/Cholec/
   split: val
   img_size : ${..img_size}
+  mean: ${..mean_per_channel}
+  std: ${..std_per_channel}
 
 test_dataset:
   _partial_: false
@@ -29,3 +35,5 @@ test_dataset:
   root_dir: ${data_dir}/Cholec/
   split: test
   img_size : ${..img_size}
+  mean: ${..mean_per_channel}
+  std: ${..std_per_channel}

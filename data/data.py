@@ -18,12 +18,12 @@ def read_split(text_file: str):
     return image_names, ann_names
 
 class SEGDataset(Dataset):
-    def __init__(self, root_dir, split = 'train', img_size = (512,512)):
+    def __init__(self, root_dir, split = 'train', img_size = (512,512),  mean = (0, 0, 0), std = (1.0, 1.0, 1.0)):
         super(SEGDataset, self).__init__()
         self.image_dir = os.path.join(root_dir,'images')
         self.ann_dir = os.path.join(root_dir,'masks')
         self.images, self.anns = read_split(os.path.join(root_dir,f'{split}.txt'))
-        train_transforms, val_transforms = get_transforms(img_size = img_size)
+        train_transforms, val_transforms = get_transforms(img_size = img_size,mean = mean,std = std)
         if(split == "train"):
             self.transform = train_transforms
         elif(split == 'val' or split == "test"):

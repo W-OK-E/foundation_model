@@ -3,7 +3,7 @@ import albumentations as A
 from albumentations.pytorch import ToTensorV2
 
 
-def get_transforms(img_size: tuple = (512, 512)):
+def get_transforms(img_size: tuple = (512, 512),  mean = (0, 0, 0), std = (1.0, 1.0, 1.0)):
     """
     Returns the train and validation transforms for image segmentation tasks.
     
@@ -29,7 +29,7 @@ def get_transforms(img_size: tuple = (512, 512)):
             A.HorizontalFlip(p = 0.5),
             A.VerticalFlip(p = 0.5),
             A.Normalize(
-            mean = (0, 0, 0), std = (1.0, 1.0, 1.0), max_pixel_value = 255.0
+            mean = mean, std = std, max_pixel_value = 255.0
             ),
             ToTensorV2()
         ], is_check_shapes=False)
@@ -37,7 +37,7 @@ def get_transforms(img_size: tuple = (512, 512)):
     val_transforms = A.Compose([
             A.PadIfNeeded(min_height=pad_h, min_width=pad_w, border_mode=cv2.BORDER_REFLECT, p=1),
             A.Normalize(
-            mean = (0, 0, 0), std = (1.0, 1.0, 1.0), max_pixel_value = 255.0
+            mean = mean, std = std, max_pixel_value = 255.0
             ),
             ToTensorV2()
         ], is_check_shapes=False)

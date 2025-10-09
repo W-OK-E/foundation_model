@@ -6,4 +6,3 @@ uv run train.py --config-path "/mnt/data/omkumar/foundation_phase1/checkpoints/C
 
 
 
-

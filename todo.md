@@ -3,3 +3,4 @@
     - Using a fixed Cmap
     - Displaying the image, gt and then all the predictions follow
 2. Organize data into split.json files
+3. Check whether the transformations are being applied to images and masks both
