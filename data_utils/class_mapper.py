@@ -1,54 +1,38 @@
+import os
 import cv2
 import numpy as np
-import os
 
-# Mapping of pixel values to class IDs
-pixel_to_class = {
-    0: 0,
-    43: 1,
-    76: 2,
-    126: 3,
-    127: 4,
-    156: 5,
-    160: 6,
-    171: 7,
-    188: 8,
-    200: 9,
-    221: 10,
-    225: 11
-}
+# Paths
+mask_dir = "datasets/Cholec/masks"
+output_dir = "datasets/Cholec/masks_converted"
+os.makedirs(output_dir, exist_ok=True)
 
-def remap_image(img):
-    """Remap pixel values in the given image according to pixel_to_class."""
-    # Initialize new image with zeros (same shape as grayscale)
-    remapped = np.zeros(img.shape, dtype=np.uint8)
-    
-    for pixel_value, class_id in pixel_to_class.items():
-        remapped[img == pixel_value] = class_id
-    
-    return remapped
+mask_files = [f for f in os.listdir(mask_dir) if f.endswith((".png", ".jpg"))]
 
-def process_images(input_dir, output_dir):
-    os.makedirs(output_dir, exist_ok=True)
-    
-    for filename in os.listdir(input_dir):
-        if filename.lower().endswith((".png", ".jpg", ".jpeg", ".tif")):
-            # Read as grayscale (single channel is enough for masks)
-            img = cv2.imread(os.path.join(input_dir, filename), cv2.IMREAD_GRAYSCALE)
-            
-            if img is None:
-                print(f"Skipping unreadable file: {filename}")
-                continue
-            
-            remapped_img = remap_image(img)
-            
-            # Save with same name in output dir
-            out_path = os.path.join(output_dir, filename)
-            cv2.imwrite(out_path, remapped_img)
-            print(f"Processed: {filename} -> {out_path}")
+all_unique_vals = set()
 
-# Example usage
-if __name__ == "__main__":
-    input_dir = "/mnt/data/omkumar/foundation_phase1/datasets/Cholec/masks"   # replace with your input folder
-    output_dir = "/mnt/data/omkumar/foundation_phase1/datasets/Cholec/masks" # replace with your output folder
-    process_images(input_dir, output_dir)
+mask_single_vals = {}
+for mask_file in mask_files:
+    mask_rgb = cv2.imread(os.path.join(mask_dir, mask_file))
+    mask_rgb = cv2.cvtColor(mask_rgb, cv2.COLOR_BGR2RGB)
+
+    mask_val = ((mask_rgb[:, :, 0].astype(np.uint16) +
+                 mask_rgb[:, :, 1].astype(np.uint16) +
+                 mask_rgb[:, :, 2].astype(np.uint16)) // 3).astype(np.uint8)
+
+    mask_single_vals[mask_file] = mask_val
+    all_unique_vals.update(np.unique(mask_val))
+
+all_unique_vals = sorted(list(all_unique_vals))
+val_to_class = {val: idx for idx, val in enumerate(all_unique_vals)}
+
+print("Global mapping of pixel values -> class integers:")
+for val, cls in val_to_class.items():
+    print(f"Pixel value {val} -> Class {cls}")
+
+for mask_file, mask_val in mask_single_vals.items():
+    mask_class = np.vectorize(val_to_class.get)(mask_val).astype(np.uint8)
+    out_path = os.path.join(output_dir, mask_file)
+    cv2.imwrite(out_path, mask_class)
+
+print("\nAll masks converted to single-channel integer masks with consistent mapping.")

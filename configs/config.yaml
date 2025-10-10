@@ -41,7 +41,7 @@ trainer:
   strategy: ${accelerator.strategy}
   num_nodes: ${accelerator.num_nodes}
   precision: ${accelerator.precision}
-  max_epochs: 2
+  max_epochs: 500
   check_val_every_n_epoch: 10
 
 logger:

@@ -4,7 +4,7 @@ import torch.nn.functional as F
 
 
 class FocalLoss(nn.Module):
-    def __init__(self, gamma=2, alpha=None, reduction='mean', task_type='multi-label', num_classes=None):
+    def __init__(self, gamma=2, alpha=None, reduction='mean', task_type='multi-label', num_classes=None, ignore_index=None):
         """
         Unified Focal Loss class for binary, multi-class, and multi-label classification tasks.
         :param gamma: Focusing parameter, controls the strength of the modulating factor (1 - p_t)^gamma
@@ -19,6 +19,7 @@ class FocalLoss(nn.Module):
         self.reduction = reduction
         self.task_type = task_type
         self.num_classes = num_classes
+        self.ignore_index = ignore_index
 
 
     def forward(self, inputs, targets):
@@ -35,7 +36,6 @@ class FocalLoss(nn.Module):
                          - multi-label: (batch_size, num_classes)
                          - multi-class: (batch_size,)
         """
-
         probs = torch.sigmoid(inputs)
 
         # Compute binary cross entropy

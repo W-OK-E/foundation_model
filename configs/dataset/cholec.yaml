@@ -1,15 +1,15 @@
 name: Cholec
-global_batch_size: 2
+global_batch_size: 24
 img_size: [480, 854]
 num_channels: 3
-num_classes: 12
+num_classes: 13
 ignore_index: 0
 class_names: ["Black Background","Abdominal Wall","Liver",
             "Gastrointestinal Tract","Fat","Grasper","Connective Tissue",
             "Blood","Cystic Duct","L-hook Electrocautery",
-            "Gallbladder","Hepatic Vein"]
-mean_per_channel: [0.38424233, 0.23087874, 0.22147045]
-std_per_channel: [0.26418403, 0.22233559, 0.20266329]
+            "Gallbladder","Hepatic Vein","Liver Ligament"]
+mean_per_channel: [0.3782772, 0.23324355, 0.22724209]
+std_per_channel: [0.27367861, 0.23258302, 0.21778946]
 
 train_dataset:
   _partial_: false

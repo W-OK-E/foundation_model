@@ -17,3 +17,6 @@ Once the training ends, the visualization. the metrics report and all will be sa
 
 # Evaluation - On the test set
 If you wish to run the evaluation, go to ~/foundation_model/eval.sh, change --config-path param to the folder that contains your config file. After training it will mostly be a folder in ~/foudnation_model/checkpoints based on the name you chose for training. 
+
+
+# The Difference between Multi-Class and Multi-Label Classification(in terms of shape of the target values)

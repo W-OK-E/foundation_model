@@ -5,6 +5,8 @@ num_channels: 3
 num_classes: 6
 ignore_index: 0
 class_names: ["Bg","EX", "HE", "MA", "OD", "SE"]
+mean_per_channel: [0.45458799 0.22424427 0.06732585]
+std_per_channel: [0.33639381 0.17377482 0.08736828]
 
 train_dataset:
   _partial_: false #Use Partial to avoid instantiating dataset at config load time or to pass any args dymanically

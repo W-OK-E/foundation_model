@@ -5,6 +5,8 @@ num_channels: 3
 num_classes: 2
 ignore_index: 0
 class_names: ["BG","Nerves"]
+mean_per_channel: [0.38990931, 0.38990931, 0.38990931]
+std_per_channel: [0.22191754, 0.22191754, 0.22191754]
 
 train_dataset:
   _partial_: false

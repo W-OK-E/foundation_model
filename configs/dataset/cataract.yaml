@@ -5,6 +5,8 @@ num_channels: 3
 num_classes: 11
 ignore_index: 0
 class_names: ["pupil", "cornea", "skin", "iris", "surgical_instrument", "hand", "speculum", "other_instruments", "lens", "background", "misc"]
+mean_per_channel: [0.30843202, 0.26594361, 0.21238147]
+std_per_channel: [0.30274876, 0.23929678, 0.20821963]
 
 train_dataset:
   _partial_: false
