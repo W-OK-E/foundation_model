@@ -32,7 +32,6 @@ class SEGDataset(Dataset):
             self.anns = [x.replace(ext,'npy') for x in self.anns]
         
         train_transforms, val_transforms = get_transforms(img_size = img_size)
-        
         if(split == "train"):
             self.transform = train_transforms
         elif(split == 'val' or split == "test"):
