@@ -12,7 +12,9 @@ def read_split(json_file: str,split = "train"):
     return image_names, ann_names
 
 class SEGDataset(Dataset):
-    def __init__(self, root_dir, split = 'train', img_size = (512,512), multi_label = False):
+    def __init__(
+            self, root_dir, split = 'train', img_size = (512,512), 
+            multi_label = False, dry_run = False, mean = None,std = None):
         super(SEGDataset, self).__init__()
         self.image_dir = os.path.join(root_dir,'images')
         self.multi_label = multi_label
@@ -26,12 +28,19 @@ class SEGDataset(Dataset):
             self.ann_dir = os.path.join(root_dir,"masks")
 
         self.images, self.anns = read_split(os.path.join(root_dir,'split.json'),split = split)
+        if(dry_run):
+            self.images = self.images[:1]
+            self.anns = self.anns[:1]
 
         if(multi_label):
             ext = self.anns[0].split('.')[1]
             self.anns = [x.replace(ext,'npy') for x in self.anns]
         
-        train_transforms, val_transforms = get_transforms(img_size = img_size)
+        if(mean is None):
+            mean = (0.0,0.0,0.0)
+            std = (1.0,1.0,1.0)
+            
+        train_transforms, val_transforms = get_transforms(img_size = img_size,mean=mean,std=std)
         if(split == "train"):
             self.transform = train_transforms
         elif(split == 'val' or split == "test"):

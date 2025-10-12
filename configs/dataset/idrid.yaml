@@ -5,9 +5,10 @@ num_channels: 3
 num_classes: 6
 ignore_index: 0
 class_names: ["BG","EX", "HE", "MA", "OD", "SE"]
-mean_per_channel: [0.45458799 0.22424427 0.06732585]
-std_per_channel: [0.33639381 0.17377482 0.08736828]
+mean_per_channel: [0.45458799, 0.22424427, 0.06732585]
+std_per_channel: [0.33639381 ,0.17377482 ,0.08736828]
 multi_label: False
+dry_run: False
 
 train_dataset:
   _partial_: false #Use Partial to avoid instantiating dataset at config load time or to pass any args dymanically
@@ -16,6 +17,9 @@ train_dataset:
   split: train
   img_size : ${..img_size}
   multi_label: ${..multi_label}
+  dry_run: ${..dry_run}
+  mean: ${..mean_per_channel}
+  std: ${..std_per_channel}
 
 val_dataset:
   _partial_: false
@@ -24,6 +28,9 @@ val_dataset:
   split: val
   img_size : ${..img_size}
   multi_label: ${..multi_label}
+  dry_run: ${..dry_run}
+  mean: ${..mean_per_channel}
+  std: ${..std_per_channel}
 
 test_dataset:
   _partial_: false
@@ -32,3 +39,6 @@ test_dataset:
   split: test
   img_size : ${..img_size}
   multi_label: ${..multi_label}
+  dry_run: ${..dry_run}
+  mean: ${..mean_per_channel}
+  std: ${..std_per_channel}

@@ -58,7 +58,7 @@ def main(cfg):
             all_zeros.append(unique_values == 1)
             if(unique_values > (num_classes+1)):
                 class_check = False
-                print(torch.unique(batch[1]))
+            print(torch.unique(batch[1]))
         if(not class_check):
             print("Max pixel exceeds number of classes")
         if(all(all_zeros)):

@@ -388,6 +388,8 @@ def main(cfg):
     model.datamodule = datamodule
     run_dir = cfg.checkpoints.dirpath
     try:
+        if cfg.dry_run:
+            pass
         if cfg.mode == "train":
             trainer.fit(model, datamodule=datamodule, ckpt_path=ckpt_path)
             # After successful training, generate visualizations for viz split

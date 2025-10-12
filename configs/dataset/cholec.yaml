@@ -10,6 +10,9 @@ class_names: ["Black Background","Abdominal Wall","Liver",
             "Gallbladder","Hepatic Vein","Liver Ligament"]
 mean_per_channel: [0.3782772, 0.23324355, 0.22724209]
 std_per_channel: [0.27367861, 0.23258302, 0.21778946]
+multi_label: False
+dry_run: False
+
 
 train_dataset:
   _partial_: false
@@ -19,6 +22,8 @@ train_dataset:
   img_size : ${..img_size}
   mean: ${..mean_per_channel}
   std: ${..std_per_channel}
+  multi_label: ${..multi_label}
+  dry_run: ${..dry_run}
 
 val_dataset:
   _partial_: false
@@ -28,6 +33,8 @@ val_dataset:
   img_size : ${..img_size}
   mean: ${..mean_per_channel}
   std: ${..std_per_channel}
+  multi_label: ${..multi_label}
+  dry_run: ${..dry_run}
 
 test_dataset:
   _partial_: false
@@ -37,3 +44,5 @@ test_dataset:
   img_size : ${..img_size}
   mean: ${..mean_per_channel}
   std: ${..std_per_channel}
+  multi_label: ${..multi_label}
+  dry_run: ${..dry_run}

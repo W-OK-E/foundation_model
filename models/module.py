@@ -33,11 +33,11 @@ class ElitLightModel(L.LightningModule):
                 on_step=True,
                 on_epoch=True,
             )
+        self.train_metrics.reset()
         return loss
 
     @torch.no_grad()
     def validation_step(self, batch:list):
-        print("Validation Step")
         image,gt_mask = batch
         #Please apply appropriate type casting in your respective loss functions if needed donot change here.
         image,gt_mask = image.float(), gt_mask.float() 
@@ -62,6 +62,7 @@ class ElitLightModel(L.LightningModule):
                 on_step=False,
                 on_epoch=True,
             )
+        self.val_metrics.reset()
 
     @torch.no_grad()
     def test_step(self, batch):
@@ -81,6 +82,7 @@ class ElitLightModel(L.LightningModule):
                 on_step=False,
                 on_epoch=True,
             )
+        self.test_metrics.reset()
     
     @torch.no_grad()
     def predict_step(self, batch, batch_idx: int, dataloader_idx: int = 0):
@@ -125,10 +127,14 @@ class ElitLightModel(L.LightningModule):
         else:
             optimizer = instantiate(self.cfg.optimizer.optim, self.model.parameters())
         scheduler = instantiate(self.cfg.lr_scheduler)(optimizer)
-        return [optimizer], [{"scheduler": scheduler, "interval": "step"}]
+        return [optimizer], [{"scheduler": scheduler, "monitor":"val/loss", 
+                            "frequency": self.trainer.check_val_every_n_epoch}]
 
     def lr_scheduler_step(self, scheduler, metric):
-        scheduler.step(self.global_step,metric)
+        if(metric is None):
+            print("No Metric, skipping step")
+            return
+        scheduler.step(metric)
 
 
 def get_parameter_names(model, forbidden_layer_types):

@@ -2,11 +2,13 @@ name: Cataracts
 global_batch_size: 8
 img_size: [360, 640]
 num_channels: 3
-num_classes: 11
+num_classes: 36
 ignore_index: 0
-class_names: ["pupil", "cornea", "skin", "iris", "surgical_instrument", "hand", "speculum", "other_instruments", "lens", "background", "misc"]
+class_names: ['bg','pupil', 'cornea', 'skin', 'iris', 'surgical_instrument', 'hand', 'speculum', 'other_instruments', 'lens', 'background', 'misc', 'misc', 'misc', 'misc', 'misc', 'misc', 'misc', 'misc', 'misc', 'misc', 'misc', 'misc', 'misc', 'misc', 'misc', 'misc', 'misc', 'misc', 'misc', 'misc', 'misc', 'misc', 'misc', 'misc', 'misc', 'misc']
 mean_per_channel: [0.30843202, 0.26594361, 0.21238147]
 std_per_channel: [0.30274876, 0.23929678, 0.20821963]
+multi_label: False
+
 
 train_dataset:
   _partial_: false
@@ -14,6 +16,10 @@ train_dataset:
   root_dir: ${data_dir}/Cataracts/
   split: train
   img_size : ${..img_size}
+  multi_label: ${..multi_label}
+  dry_run: ${..dry_run}
+  mean: ${..mean_per_channel}
+  std: ${..std_per_channel}
 
 val_dataset:
   _partial_: false
@@ -21,6 +27,10 @@ val_dataset:
   root_dir: ${data_dir}/Cataracts/
   split: val
   img_size : ${..img_size}
+  multi_label: ${..multi_label}
+  dry_run: ${..dry_run}
+  mean: ${..mean_per_channel}
+  std: ${..std_per_channel}
 
 test_dataset:
   _partial_: false
@@ -28,3 +38,7 @@ test_dataset:
   root_dir: ${data_dir}/Cataracts/
   split: val
   img_size : ${..img_size}
+  multi_label: ${..multi_label}
+  dry_run: ${..dry_run}
+  mean: ${..mean_per_channel}
+  std: ${..std_per_channel}

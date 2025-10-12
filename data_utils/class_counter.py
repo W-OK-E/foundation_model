@@ -2,8 +2,10 @@ import os
 import argparse
 from tqdm import tqdm
 import numpy as np
+import cv2
 from tqdm import tqdm
 from PIL import Image
+import imageio.v3 as iio
 
 def count_segmentation_classes(mask_dir, exts=(".png", ".jpg", ".bmp",".tif")):
     """
@@ -21,7 +23,8 @@ def count_segmentation_classes(mask_dir, exts=(".png", ".jpg", ".bmp",".tif")):
     for fname in tqdm(os.listdir(mask_dir)):
         if fname.lower().endswith(exts):
             path = os.path.join(mask_dir, fname)
-            mask = np.array(Image.open(path))
+            # mask = np.array(Image.open(path))
+            mask = iio.imread(path)
             unique_classes.update(np.unique(mask))
 
     return unique_classes
