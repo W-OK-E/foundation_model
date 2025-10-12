@@ -21,15 +21,11 @@ class ElitLightModel(L.LightningModule):
         image,gt_mask = image.float(), gt_mask.long()
         pred = self.model(image)
         
-        # import ipdb
-        # print("Ground Truth Mask shape:",gt_mask.shape)
-        # ipdb.set_trace()
-        
         loss = self.loss(pred, gt_mask)
         self.train_metrics.update(pred, gt_mask)
         self.log("train/loss", loss, sync_dist=True, on_step=True, on_epoch=True)
-        metrics = self.train_metrics.compute()
-        for metric_name, metric_value in metrics.items():
+        mean_metric,class_metrics = self.train_metrics.compute()
+        for metric_name, metric_value in mean_metric.items():
             self.log(
                 f"train/{metric_name}",
                 metric_value,
@@ -43,7 +39,7 @@ class ElitLightModel(L.LightningModule):
     def validation_step(self, batch:list):
         print("Validation Step")
         image,gt_mask = batch
-        #Please apply appropriate type casting in your respective loss functions if needed donot chang here.
+        #Please apply appropriate type casting in your respective loss functions if needed donot change here.
         image,gt_mask = image.float(), gt_mask.float() 
         pred = self.model(image)    
         
@@ -57,8 +53,8 @@ class ElitLightModel(L.LightningModule):
         self.log("val/loss", loss, sync_dist=True, on_step=False, on_epoch=True)
 
     def on_validation_epoch_end(self):
-        metrics = self.val_metrics.compute()
-        for metric_name, metric_value in metrics.items():
+        mean_metrics, class_metrics = self.val_metrics.compute()
+        for metric_name, metric_value in mean_metrics.items():
             self.log(
                 f"val/{metric_name}",
                 metric_value,
@@ -76,8 +72,8 @@ class ElitLightModel(L.LightningModule):
         #at every test step, they can update the confusion matrix.
 
     def on_test_epoch_end(self):
-        metrics = self.test_metrics.compute() #And after accumulating the test metrics at every step, they compute the final metrics here.
-        for metric_name, metric_value in metrics.items():
+        mean_metrics, class_metric = self.test_metrics.compute() #And after accumulating the test metrics at every step, they compute the final metrics here.
+        for metric_name, metric_value in mean_metrics.items():
             self.log(
                 f"test/{metric_name}",
                 metric_value,
@@ -132,7 +128,7 @@ class ElitLightModel(L.LightningModule):
         return [optimizer], [{"scheduler": scheduler, "interval": "step"}]
 
     def lr_scheduler_step(self, scheduler, metric):
-        scheduler.step(self.global_step)
+        scheduler.step(self.global_step,metric)
 
 
 def get_parameter_names(model, forbidden_layer_types):

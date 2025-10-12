@@ -7,22 +7,25 @@ defaults:
 
 model:
   train_metrics:
-    _target_: metrics.seg_metrics.SegmentationMetrics
+    _target_: metrics.torch_metrics.SegmentationMetrics
     num_classes: ${dataset.num_classes}
     class_names: ${dataset.class_names}
     ignore_index: ${dataset.ignore_index}
+    multi_label: ${dataset.multi_label}
 
   val_metrics:
-    _target_: metrics.seg_metrics.SegmentationMetrics
+    _target_: metrics.torch_metrics.SegmentationMetrics
     num_classes: ${dataset.num_classes}
     class_names: ${dataset.class_names}
     ignore_index: ${dataset.ignore_index}
+    multi_label: ${dataset.multi_label}
 
   test_metrics:
-    _target_: metrics.seg_metrics.SegmentationMetrics
+    _target_: metrics.torch_metrics.SegmentationMetrics
     num_classes: ${dataset.num_classes}
     class_names: ${dataset.class_names}
     ignore_index: ${dataset.ignore_index}
+    multi_label: ${dataset.multi_label}
 
 datamodule:
   _target_: data.datamodule.SegDataModule

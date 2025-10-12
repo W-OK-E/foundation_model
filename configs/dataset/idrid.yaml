@@ -4,9 +4,10 @@ img_size: [2848, 4288]
 num_channels: 3
 num_classes: 6
 ignore_index: 0
-class_names: ["Bg","EX", "HE", "MA", "OD", "SE"]
+class_names: ["BG","EX", "HE", "MA", "OD", "SE"]
 mean_per_channel: [0.45458799 0.22424427 0.06732585]
 std_per_channel: [0.33639381 0.17377482 0.08736828]
+multi_label: False
 
 train_dataset:
   _partial_: false #Use Partial to avoid instantiating dataset at config load time or to pass any args dymanically
@@ -14,6 +15,7 @@ train_dataset:
   root_dir: ${data_dir}/IDRiD/
   split: train
   img_size : ${..img_size}
+  multi_label: ${..multi_label}
 
 val_dataset:
   _partial_: false
@@ -21,6 +23,7 @@ val_dataset:
   root_dir: ${data_dir}/IDRiD/
   split: val
   img_size : ${..img_size}
+  multi_label: ${..multi_label}
 
 test_dataset:
   _partial_: false
@@ -28,3 +31,4 @@ test_dataset:
   root_dir: ${data_dir}/IDRiD/
   split: test
   img_size : ${..img_size}
+  multi_label: ${..multi_label}

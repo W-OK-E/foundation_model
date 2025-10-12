@@ -4,11 +4,45 @@ import random
 import cv2
 import torch
 import numpy as np
+import albumentations as A
+
+from albumentations.pytorch import ToTensorV2
+from pathlib import Path
 from glob import glob
 from tqdm import tqdm
 from omegaconf import OmegaConf
 from hydra.utils import instantiate
-import hydra
+
+
+def get_transforms(img_size: tuple = (512, 512)):
+    """
+    Returns the train and validation transforms for image segmentation tasks.
+    
+    Args:
+        img_size (tuple): The size(hxw) to which images will be padded, must be a multiple of 128.
+    """
+    orig_h,orig_w = img_size
+    pad_h = (orig_h / 128)
+    pad_w = (orig_w / 128)
+    if pad_h != int(pad_h):
+        pad_h = (int(pad_h) + 1) * 128
+    else:
+        pad_h = orig_h
+    if pad_w != int(pad_w):
+        pad_w = (int(pad_w) + 1) * 128
+    else:
+        pad_w = orig_w
+    
+    
+    tf = A.Compose([
+            A.PadIfNeeded(min_height=pad_h, min_width=pad_w, border_mode=cv2.BORDER_REFLECT, p=1),
+            A.Normalize(
+            mean = (0, 0, 0), std = (1.0, 1.0, 1.0), max_pixel_value = 255.0
+            ),
+            ToTensorV2()
+        ], is_check_shapes=False)
+    
+    return tf
 
 def detect_num_classes(mask_dir):
     mask_files = glob(os.path.join(mask_dir, "*.png"))
@@ -18,43 +52,22 @@ def detect_num_classes(mask_dir):
         num_classes = max(num_classes, mask.max())
     return num_classes + 1 
 
-def random_colors(num_classes):
-    colors = []
-    for _ in range(num_classes):
-        colors.append([random.randint(0, 255) for _ in range(3)])
-    return colors
-
-def visualize(model, dataset_name, out_dir, device="cpu"):
-    os.makedirs(out_dir, exist_ok=True)
-    viz_file = f"datasets/{dataset_name}/viz.txt"
-    img_dir = f"datasets/{dataset_name}/images"
-    mask_dir = f"datasets/{dataset_name}/masks"
-
-    num_classes = int(detect_num_classes(mask_dir))
-    colors = random_colors(num_classes)
-
-    with open(viz_file, "r") as f:
-        filenames = [line.strip() for line in f.readlines()]
-
-    for fname in tqdm(filenames):
-        img_path = os.path.join(img_dir, fname)
-        mask_path = os.path.join(mask_dir, fname)
-
-        img = cv2.imread(img_path)
-        mask = cv2.imread(mask_path, cv2.IMREAD_UNCHANGED)
-
-        overlay = np.zeros_like(img)
-        for c in range(num_classes):
-            overlay[mask == c] = colors[c]
-
-        blended = cv2.addWeighted(img, 0.5, overlay, 0.5, 0)
-        save_path = os.path.join(out_dir, fname)
-        cv2.imwrite(save_path, blended)
-
-def main(dataset_name):
+def visualize()
+def main(args):
     device = "cuda" if torch.cuda.is_available() else "cpu"
+    
+    dataset_name = args.dataset_name
+    img_path =  Path(args.img_path)
 
     mask_dir = f"datasets/{dataset_name}/masks"
+    mask_file = os.path.join(mask_dir,img_path.stem)
+
+    im = cv2.imread(img_path)
+    mask = cv2.imread(mask_file)
+
+    transforms = get_transforms(im.shape[:2])
+    im,mask = transforms(image = im,mask = mask)
+
     num_classes = int(detect_num_classes(mask_dir))
 
     cfg_dict = {
@@ -96,5 +109,6 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--dataset_name", required=True, help="Dataset name (IDRiD, etc.)")
+    parser.add_argument("--img_path",required=True,help="Path to the input Image")
     args = parser.parse_args()
-    main(args.dataset_name)
+    main(args)

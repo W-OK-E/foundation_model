@@ -37,7 +37,10 @@ class FocalLoss(nn.Module):
                          - multi-class: (batch_size,)
         """
         probs = torch.sigmoid(inputs)
-
+        
+        #Targets are of the shape: B x H x W x N_c changing that
+        targets = targets.permute(0,3,1,2)
+        
         # Compute binary cross entropy
         bce_loss = F.binary_cross_entropy_with_logits(inputs, targets, reduction='none')
 

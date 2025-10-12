@@ -12,12 +12,13 @@ class SegmentationMetrics(Metric):
         ignore_index (int): ground truth index to ignore in the metrics.
     """
 
-    def __init__(self, num_classes, class_names, ignore_index=None):
+    def __init__(self, num_classes, class_names, ignore_index=None, multi_label=False):
         super().__init__()
         self.num_classes = num_classes
         self.ignore_index = ignore_index
         self.class_names = class_names
         self.conf_matrix = np.zeros((num_classes, num_classes))
+        self.multi_label = multi_label
 
     def update(self, pred, gt):
         """
@@ -27,9 +28,13 @@ class SegmentationMetrics(Metric):
             gt: B x H x W (ground truth labels)
         """
         assert(len(pred.shape) == 4) #B x C x H x W
-        assert(len(gt.shape) == 3) #B x H x W
-
-        pred = torch.argmax(pred, dim=1) #B x H x W (predicted labels from logits)
+        
+        if(self.multi_label):
+            assert(len(gt.shape) == 4)
+            gt = gt.permute(0,3,1,2)
+        else:
+            assert(len(gt.shape) == 3) #B x H x W
+            pred = torch.argmax(pred, dim=1) #B x H x W (predicted labels from logits)
 
         gt = gt.flatten().cpu().numpy()
         pred = pred.flatten().cpu().numpy()
@@ -85,21 +90,22 @@ class SegmentationMetrics(Metric):
         )
         mf = np.nanmean(per_class_f) * 100
 
-        output = {
+        mean_output = {
             "miou": miou,
             "mean_dice": mean_dice,
             "mf": mf,
             "maupr": maupr
         }
 
+        class_output = {}
         for class_id in range(self.num_classes):
-            output[f'class_{class_id}_iou'] = per_class_iou[class_id] * 100
-            output[f'class_{class_id}_dice'] = per_class_dice[class_id] * 100
-            output[f'class_{class_id}_f'] = per_class_f[class_id] * 100
-            output[f'class_{class_id}_precision'] = precision[class_id] * 100
-            output[f'class_{class_id}_recall'] = recall[class_id] * 100
+            class_output[f'class_{class_id}_iou'] = per_class_iou[class_id] * 100
+            class_output[f'class_{class_id}_dice'] = per_class_dice[class_id] * 100
+            class_output[f'class_{class_id}_f'] = per_class_f[class_id] * 100
+            class_output[f'class_{class_id}_precision'] = precision[class_id] * 100
+            class_output[f'class_{class_id}_recall'] = recall[class_id] * 100
 
         # Reset confusion matrix after compute
         self.conf_matrix = np.zeros((self.num_classes, self.num_classes))
 
-        return output
+        return mean_output,class_output

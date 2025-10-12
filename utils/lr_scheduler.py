@@ -1,5 +1,5 @@
 import math
-
+import torch
 
 class WarmupLR:
     """
@@ -29,6 +29,48 @@ class WarmupLR:
             self.optimizer.param_groups, self.base_lr
         ):
             param_group["lr"] = self.get_lr(base_lr_group, step)
+
+    def state_dict(self):
+        return {
+            key: value for key, value in self.__dict__.items() if key != "optimizer"
+        }
+
+    def load_state_dict(self, state_dict):
+        self.__dict__.update(state_dict)
+
+
+class AntiWarmupLR:
+    """
+    Cools down from a higher learning rate to a lower one and then proceeds to do ReduceLROnPlateau
+
+    Args:
+        optimizer (torch.optim.Optimizer): optimizer
+        warmup_steps (int): number of warmup steps
+
+    """
+
+    def __init__(self, optimizer, warmup_steps):
+        self.optimizer = optimizer
+        self.warmup_steps = warmup_steps
+        self.base_lr = None
+        self.reducelrOnPlateau = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer,mode="min",factor = 0.1,
+                                                                            patience=10,min_lr=1e-6)
+
+    def get_lr(self, lr, step, metric=None):
+        if step < self.warmup_steps:
+            return lr / min(step / max(self.warmup_steps, 1), 1.0)
+        else:
+            return self.reducelrOnPlateau.step(metric)
+        
+    def step(self, step, metric = None):
+        if self.base_lr is None:
+            self.base_lr = [
+                param_group["lr"] for param_group in self.optimizer.param_groups
+            ]
+        for param_group, base_lr_group in zip(
+            self.optimizer.param_groups, self.base_lr
+        ):
+            param_group["lr"] = self.get_lr(base_lr_group, step, metric)
 
     def state_dict(self):
         return {
