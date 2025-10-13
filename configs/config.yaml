@@ -77,6 +77,8 @@ experiment_name: ${dataset.name}_${model.name}
 mode: train # change that to eval to do the testing
 num_classes: ${dataset.num_classes}
 dry_run: False
+vis: True
+vis_coutn: True
 hydra:
   run:
     dir: outputs/${hydra.job.name}/${now:%Y-%m-%d_%H-%M-%S}/${experiment_name}

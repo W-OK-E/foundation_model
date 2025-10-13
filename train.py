@@ -12,7 +12,9 @@ import numpy as np
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+import imageio.v3 as iio
 
+from data.transforms import get_transforms
 from shutil import copyfile
 from omegaconf import OmegaConf
 from os.path import isfile, join
@@ -141,7 +143,7 @@ def hydra_boilerplate(cfg):
     return trainer, model, datamodule, ckpt_path
 
 
-def run_post_training_visualization(cfg):
+def run_post_training_visualization(cfg,model):
     """Run visualization script on files listed in datasets/<dataset>/viz.txt.
 
     This executes visualize.py from the project root so all relative paths
@@ -152,7 +154,7 @@ def run_post_training_visualization(cfg):
     try:
         project_root = cfg.root_dir
         dataset_name = cfg.dataset.name
-        _viz_from_split(project_root, dataset_name, cfg)
+        _viz_from_split(project_root, dataset_name, cfg,model)
         print(f"Post-training visualizations generated for {dataset_name}.")
     except Exception as exc:
         print(f"Visualization step failed: {exc}")
@@ -185,6 +187,10 @@ def _viz_from_split(project_root, dataset_name, cfg, model=None):
     viz_list = split.get("viz", [])
     out_dir = join(cfg.checkpoints.dirpath, "viz")
     os.makedirs(out_dir, exist_ok=True)
+    
+    best_model_path = os.path.join(cfg.checkpoints.dirpath,'best_dice_ckpt.ckpt')
+    ckpt = torch.load(best_model_path)
+    model.load_state_dict(ckpt['state_dict'])
 
     for i, fname in enumerate(viz_list):
         # mask file is typically the listed name (e.g. 0000000384_rgb_mask.png)
@@ -196,30 +202,26 @@ def _viz_from_split(project_root, dataset_name, cfg, model=None):
             continue
 
         # Load original image
-        orig = None
-        if img_path is not None:
-            try:
-                orig = Image.open(img_path).convert("RGB")
-            except Exception:
-                orig = None
+        
+        orig = iio.imread(img_path)
+        if(cfg.dataset.multi_label):
+            print("Multi-Label Visualization yet to be implemented")
+            continue
 
-        # Load mask (may be RGB or single-channel)
-        mask = None
-        if mask_path is not None:
-            try:
-                mask = Image.open(mask_path).convert("L")
-            except Exception:
-                mask = None
-
+        mask = iio.imread(mask_path)
+        if mask.ndim == 3:
+                mask = np.dot(mask[..., :3], [0.2989, 0.5870, 0.1140]).astype(np.uint8)
+        _,tf = get_transforms(orig.shape[:2])
+        transformer = tf(image = orig, mask = mask)
+        orig, mask = transformer["image"], transformer["mask"]
         # Prediction
         pred_arr = None
-        if model is not None and orig is not None:
+        if model is not None and orig is not None and mask is not None:
             try:
-                arr = np.array(orig).astype(np.float32) 
-                tensor = torch.from_numpy(arr).permute(2, 0, 1).unsqueeze(0).to(model.device)
+                orig = orig.unsqueeze(0).to(model.device)
                 model.eval()
                 with torch.no_grad():
-                    out = model.model(tensor)
+                    out = model.model(orig)
                 # out can be [B, C, H, W] or [B, 1, H, W]
                 if out.dim() == 4 and out.size(1) > 1:
                     pred = out.argmax(1).squeeze(0).cpu().numpy()
@@ -247,6 +249,11 @@ def _viz_from_split(project_root, dataset_name, cfg, model=None):
 
         # --- Original ---
         ax0 = fig.add_subplot(gs[0, 0])
+
+        #Obrain Arrays
+        orig = orig[0].permute(1,2,0)
+        mask = mask.cpu().numpy()
+        
         if orig is not None:
             ax0.imshow(np.array(orig))
         else:
@@ -335,13 +342,13 @@ def _compute_segmentation_report(model, datamodule, report_cfg):
             logits = model.model(images)
             metrics_obj.update(logits, gt)
 
-    results = metrics_obj.compute()
+    mean_results,class_results = metrics_obj.compute()
 
     # Filter based on requested metrics
     requested = report_cfg.metrics
     if "all" not in requested:
         filtered = {}
-        for key, value in results.items():
+        for key, value in mean_results.items():
             if key in requested:
                 filtered[key] = value
             elif key.startswith("class_"):
@@ -349,9 +356,18 @@ def _compute_segmentation_report(model, datamodule, report_cfg):
                     filtered[key] = value
                 if "per_class_dice" in requested and key.endswith("_dice"):
                     filtered[key] = value
+        for key, value in class_results.items():
+            if key in requested:
+                filtered[key] = value
+            elif key.startswith("class_"):
+                if "per_class_iou" in requested and key.endswith("_iou"):
+                    filtered[key] = value
+                if "per_class_dice" in requested and key.endswith("_dice"):
+                    filtered[key] = value
+
         results = filtered
 
-    return results
+    return mean_results,class_results
 
 
 def run_post_training_report(cfg, model, datamodule):
@@ -361,25 +377,31 @@ def run_post_training_report(cfg, model, datamodule):
     print("Generating Post Training Report")
     for split in ["test","train","val"]:
         report_cfg.split = split
-        results = _compute_segmentation_report(model, datamodule, report_cfg)
+        mean_results,class_results = _compute_segmentation_report(model, datamodule, report_cfg)
         out_dir = os.path.join(cfg.checkpoints.dirpath,"reports")
         os.makedirs(out_dir, exist_ok=True)
 
         # File stems based on experiment name and split
         stem = f"{cfg.experiment_name}_{report_cfg.split}"
-        json_path = os.path.join(out_dir, f"{stem}.json")
+        mean_json_path = os.path.join(out_dir, f"mean_{stem}.json")
+        class_json_path = os.path.join(out_dir, f"class_{stem}.json")
         csv_path = os.path.join(out_dir, f"{stem}.csv")
 
         # Save JSON
-        with open(json_path, "w") as f:
-            json.dump(results, f, indent=2)
+        with open(mean_json_path, "w") as f:
+            json.dump(mean_results, f, indent=2)
+        with open(class_json_path,"w") as f:
+            json.dump(class_results,f)
+
 
         # Save CSV (key,value)
         with open(csv_path, "w", newline="") as f:
             writer = csv.writer(f)
             writer.writerow(["metric", "value"])
-            for k, v in results.items():
+            for k, v in mean_results.items():
                 writer.writerow([k, v])
+            for k,v in class_results.items():
+                writer.writerow([k,v])
         print(f"Saved metrics report to {out_dir}")
 
 @hydra.main(config_path="configs", config_name="config", version_base=None)
@@ -393,18 +415,21 @@ def main(cfg):
         if cfg.mode == "train":
             trainer.fit(model, datamodule=datamodule, ckpt_path=ckpt_path)
             # After successful training, generate visualizations for viz split
-            run_post_training_visualization(cfg)
+            run_post_training_visualization(cfg,model)
             # Generate post-training metrics report
             run_post_training_report(cfg, model, datamodule)
 
         elif cfg.mode == "train_dummy":
             print("Running a dummy session")
-            run_post_training_visualization(cfg)
+            run_post_training_visualization(cfg,model)
             # Generate post-training metrics report
             # run_post_training_report(cfg, model, datamodule)
 
         elif cfg.mode == "eval":
+            print("Running Pilot Evaluation")
             trainer.test(model, datamodule=datamodule)
+            run_post_training_visualization(cfg,model)
+            run_post_training_report(cfg,model,datamodule)
         elif cfg.mode == "predict":
             trainer.predict(model, datamodule=datamodule)
 
