@@ -1,5 +1,5 @@
 name: Cholec
-global_batch_size: 24
+global_batch_size: 4
 img_size: [480, 854]
 num_channels: 3
 num_classes: 13

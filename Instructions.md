@@ -7,9 +7,12 @@ When training you need to be change the following things:
     - The dataset name being trained can be changed here.
     - The loss function being used can be changed here(the options available are basically yaml file names)
 
+
 To Begin training:
 - Start a tmux session by running ./tmux.sh from ~/foundation_model dir
-- 
+-   If you are training multiple experiments the GPUs can be busy, but since you have two GPUs make use of the fact in the following ways:
+    - `/home/asavari/foundation_model/configs/accelerator/gpu.yaml` has device:[0] you can change that to decide on what GPU the experiment runs(You have 0,1)
+    - So if it's not possible to fit two experiments on a single GPU, change the device param in gpu.yaml to utilise the free GPU
 - Run "./run.sh" from the ~/foundation_model directory
 
 # File Structure - What contains what files

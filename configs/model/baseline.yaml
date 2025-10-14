@@ -4,4 +4,4 @@ defaults:
   - optimizer: adam
   - lr_scheduler: lr_plateau
 
-name: Focal
+name: Focal_Set2
