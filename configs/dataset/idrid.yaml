@@ -9,6 +9,7 @@ mean_per_channel: [0.45458799, 0.22424427, 0.06732585]
 std_per_channel: [0.33639381 ,0.17377482 ,0.08736828]
 multi_label: False
 dry_run: False
+cls_weights: [0.00995578, 0.9448299,  1.06201258, 9.19234983, 0.53680837, 5.12533219]
 
 train_dataset:
   _partial_: false #Use Partial to avoid instantiating dataset at config load time or to pass any args dymanically
