@@ -378,7 +378,7 @@ def run_post_training_report(cfg, model, datamodule):
     for split in ["test","train","val"]:
         report_cfg.split = split
         mean_results,class_results = _compute_segmentation_report(model, datamodule, report_cfg)
-        out_dir = os.path.join(cfg.checkpoints.dirpath,"reports")
+        out_dir = os.path.join(cfg.checkpoints.dirpath,"reports",split)
         os.makedirs(out_dir, exist_ok=True)
 
         # File stems based on experiment name and split
@@ -402,7 +402,7 @@ def run_post_training_report(cfg, model, datamodule):
                 writer.writerow([k, v])
             for k,v in class_results.items():
                 writer.writerow([k,v])
-        print(f"Saved metrics report to {out_dir}")
+    print(f"Saved metrics report to {out_dir}")
 
 @hydra.main(config_path="configs", config_name="config", version_base=None)
 def main(cfg):

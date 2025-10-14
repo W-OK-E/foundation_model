@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from collections.abc import Iterable
 
 class FocalLoss(nn.Module):
     def __init__(self, gamma=2, alpha=None, reduction='mean', task_type='binary', num_classes=None, ignore_index = None):
@@ -15,19 +16,15 @@ class FocalLoss(nn.Module):
         """
         super(FocalLoss, self).__init__()
         self.gamma = gamma
-        self.alpha = alpha
+        if isinstance(alpha, Iterable) and not (type(alpha) == str):
+            print("Class weights Set")
+            self.alpha = torch.Tensor(alpha)
+        else:
+            self.alpha = alpha
         self.reduction = reduction
         self.task_type = task_type
         self.num_classes = num_classes
         self.ignore_index = ignore_index
-
-        # Handle alpha for class balancing in multi-class tasks
-        if task_type == 'multi-class' and alpha is not None and isinstance(alpha, (list, torch.Tensor)):
-            assert num_classes is not None, "num_classes must be specified for multi-class classification"
-            if isinstance(alpha, list):
-                self.alpha = torch.Tensor(alpha)
-            else:
-                self.alpha = alpha
 
     def forward(self, inputs, targets):
         """
