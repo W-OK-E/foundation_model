@@ -2,9 +2,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from collections.abc import Iterable
 
 class FocalLoss(nn.Module):
-    def __init__(self, gamma=2, alpha=None, reduction='mean', task_type='multi-label', num_classes=None, ignore_index=None):
+    def __init__(self, gamma=2, alpha=None, reduction='mean', 
+                 task_type='multi-label', num_classes=None, 
+                 ignore_index=None, batch_sz = None, img_sz = None):        
         """
         Unified Focal Loss class for binary, multi-class, and multi-label classification tasks.
         :param gamma: Focusing parameter, controls the strength of the modulating factor (1 - p_t)^gamma
@@ -15,11 +18,17 @@ class FocalLoss(nn.Module):
         """
         super(FocalLoss, self).__init__()
         self.gamma = gamma
-        self.alpha = alpha
+        if(isinstance(alpha,Iterable) and type(alpha) != str):
+            self.alpha = torch.zeros((batch_sz,num_classes,img_sz[0],img_sz[1]))
+            for idx,alp in enumerate(alpha):
+                self.alpha[:,idx,:,:] = alp
+        else:
+            raise
         self.reduction = reduction
         self.task_type = task_type
         self.num_classes = num_classes
         self.ignore_index = ignore_index
+        
 
 
     def forward(self, inputs, targets):
@@ -36,6 +45,11 @@ class FocalLoss(nn.Module):
                          - multi-label: (batch_size, num_classes)
                          - multi-class: (batch_size,)
         """
+        print("="*70)
+        print("Inside Mulilabel targets shape:",targets.shape,"Inputs Shape:",inputs.shape)
+        print("="*70)
+        import ipdb
+        ipdb.set_trace()
         probs = torch.sigmoid(inputs)
         
         #Targets are of the shape: B x H x W x N_c changing that
@@ -50,6 +64,11 @@ class FocalLoss(nn.Module):
 
         # Apply alpha if provided
         if self.alpha is not None:
+            print("Alpha is:",self.alpha.shape)
+            print("Targets Shape:",targets.shape)
+            print("BCE Loss Shape:",bce_loss.shape)
+            import ipdb
+            ipdb.set_trace()
             alpha_t = self.alpha * targets + (1 - self.alpha) * (1 - targets)
             bce_loss = alpha_t * bce_loss
 

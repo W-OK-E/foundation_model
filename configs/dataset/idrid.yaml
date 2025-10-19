@@ -1,9 +1,10 @@
 name: IDRiD
 global_batch_size: 1
 img_size: [2848, 4288]
+train_im_size: [2944, 4352]
 num_channels: 3
 num_classes: 6
-ignore_index: 0
+ignore_index: ~
 class_names: ["BG","EX", "HE", "MA", "OD", "SE"]
 mean_per_channel: [0.45458799, 0.22424427, 0.06732585]
 std_per_channel: [0.33639381 ,0.17377482 ,0.08736828]

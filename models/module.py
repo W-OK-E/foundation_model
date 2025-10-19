@@ -58,7 +58,8 @@ class ElitLightModel(L.LightningModule):
         
         loss = self.loss(pred, gt_mask)
         self.val_metrics.update(pred, gt_mask)
-        self.log("val/loss", loss, sync_dist=True, on_step=True, on_epoch=True)
+        self.log("val/loss", loss, sync_dist=True, on_step=False, on_epoch=True)
+        
 
     def on_validation_epoch_end(self):
         mean_metrics, class_metrics = self.val_metrics.compute()

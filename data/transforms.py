@@ -3,7 +3,7 @@ import albumentations as A
 from albumentations.pytorch import ToTensorV2
 
 
-def get_transforms(img_size: tuple = (512, 512),  mean = (0, 0, 0), std = (1.0, 1.0, 1.0)):
+def get_transforms(img_size: tuple = (512, 512),  mean = (0, 0, 0), std = (1.0, 1.0, 1.0), get_size = False):
     """
     Returns the train and validation transforms for image segmentation tasks.
     
@@ -22,6 +22,8 @@ def get_transforms(img_size: tuple = (512, 512),  mean = (0, 0, 0), std = (1.0, 
     else:
         pad_w = orig_w
     
+    if(get_size):
+        return pad_h,pad_w
     #Alright so it must pad it to be of size that is a multiple of 128, and then other optional transformations
     #can be applied.
     train_transforms = A.Compose([
