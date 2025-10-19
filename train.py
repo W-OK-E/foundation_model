@@ -204,9 +204,9 @@ def _viz_from_split(project_root, dataset_name, cfg, model=None):
         # Load original image
         
         orig = iio.imread(img_path)
-        if(cfg.dataset.multi_label):
-            print("Multi-Label Visualization yet to be implemented")
-            continue
+        # if(cfg.dataset.multi_label):
+        #     print("Multi-Label Visualization yet to be implemented")
+        #     continue
 
         mask = iio.imread(mask_path)
         if mask.ndim == 3:
@@ -223,11 +223,18 @@ def _viz_from_split(project_root, dataset_name, cfg, model=None):
                 with torch.no_grad():
                     out = model.model(orig)
                 # out can be [B, C, H, W] or [B, 1, H, W]
-                if out.dim() == 4 and out.size(1) > 1:
+                if out.dim() == 4 and out.size()[1] > 1:
+                    out[:,0,:,:] = 0
                     pred = out.argmax(1).squeeze(0).cpu().numpy()
+                    print("Prediction Reshaped to:",pred.shape,np.unique(pred))
+                    # import ipdb
+                    # ipdb.set_trace()
                 else:
                     out_sig = torch.sigmoid(out)
                     pred = (out_sig.squeeze(0).squeeze(0).cpu().numpy() > 0.5).astype(np.uint8)
+                    print("Prediction reshaped to:",pred.shape)
+                # import ipdb
+                # ipdb.set_trace()
                 pred_arr = pred
             except Exception as exc:
                 print(f"Prediction failed for {fname}: {exc}")
@@ -251,7 +258,7 @@ def _viz_from_split(project_root, dataset_name, cfg, model=None):
         ax0 = fig.add_subplot(gs[0, 0])
 
         #Obrain Arrays
-        orig = orig[0].permute(1,2,0)
+        orig = orig[0].permute(1,2,0).cpu().numpy()
         mask = mask.cpu().numpy()
         
         if orig is not None:
@@ -320,7 +327,7 @@ def _select_dataset_by_split(datamodule, split):
 
 def _compute_segmentation_report(model, datamodule, report_cfg):
     model.eval()
-    split = report_cfg.split
+    split = report_cfg
     dataset = _select_dataset_by_split(datamodule, split)
     loader = {
         "train": datamodule.train_dataloader,
@@ -345,7 +352,7 @@ def _compute_segmentation_report(model, datamodule, report_cfg):
     mean_results,class_results = metrics_obj.compute()
 
     # Filter based on requested metrics
-    requested = report_cfg.metrics
+    requested = "partial"
     if "all" not in requested:
         filtered = {}
         for key, value in mean_results.items():
@@ -372,17 +379,17 @@ def _compute_segmentation_report(model, datamodule, report_cfg):
 
 def run_post_training_report(cfg, model, datamodule):
     report_cfg = cfg.report
-    if not report_cfg.enabled:
-        return
+    # if not report_cfg.enabled:
+    #     return
     print("Generating Post Training Report")
     for split in ["test","train","val"]:
-        report_cfg.split = split
-        mean_results,class_results = _compute_segmentation_report(model, datamodule, report_cfg)
+        # report_cfg.split = split
+        mean_results,class_results = _compute_segmentation_report(model, datamodule, split)
         out_dir = os.path.join(cfg.checkpoints.dirpath,"reports",split)
         os.makedirs(out_dir, exist_ok=True)
 
         # File stems based on experiment name and split
-        stem = f"{cfg.experiment_name}_{report_cfg.split}"
+        stem = f"{cfg.experiment_name}_{split}"
         mean_json_path = os.path.join(out_dir, f"mean_{stem}.json")
         class_json_path = os.path.join(out_dir, f"class_{stem}.json")
         csv_path = os.path.join(out_dir, f"{stem}.csv")
@@ -413,8 +420,10 @@ def main(cfg):
         if cfg.dry_run:
             pass
         if cfg.mode == "train":
+            device = model.device
             trainer.fit(model, datamodule=datamodule, ckpt_path=ckpt_path)
             # After successful training, generate visualizations for viz split
+            model.to(device)
             run_post_training_visualization(cfg,model)
             # Generate post-training metrics report
             run_post_training_report(cfg, model, datamodule)
@@ -427,7 +436,9 @@ def main(cfg):
 
         elif cfg.mode == "eval":
             print("Running Pilot Evaluation")
+            device = model.device
             trainer.test(model, datamodule=datamodule)
+            model = model.to(device) #Just stay on the same device
             run_post_training_visualization(cfg,model)
             run_post_training_report(cfg,model,datamodule)
         elif cfg.mode == "predict":

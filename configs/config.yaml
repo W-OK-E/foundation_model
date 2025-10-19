@@ -44,8 +44,8 @@ trainer:
   strategy: ${accelerator.strategy}
   num_nodes: ${accelerator.num_nodes}
   precision: ${accelerator.precision}
-  max_epochs: 500
-  check_val_every_n_epoch: 10
+  max_epochs: 1
+  check_val_every_n_epoch: 1
 
 logger:
   _target_: pytorch_lightning.loggers.WandbLogger
@@ -54,7 +54,7 @@ logger:
   project: ELiTNet
   log_model: False
   offline: False
-  entity: oksure
+  entity: om-mitmpl2023-manipal
 
 checkpoints:
   _target_: pytorch_lightning.callbacks.ModelCheckpoint

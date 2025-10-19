@@ -219,3 +219,21 @@ class CELoss(nn.Module):
         if(target.dtype != torch.long):
             target = target.long()
         return self.ce(input, target)
+
+#IDRID SOTA Loss
+class BinaryDiceLoss(nn.Module):
+    def __init__(self, ignore_index=None):
+        super().__init__()
+        self.ignore_index = ignore_index
+
+    def forward(self, pred, label,smooth=1.0, exponent=2):
+        assert(len(pred.shape) == label.shape)
+        pred = pred.contiguous().view(pred.shape[0], -1).float()
+        label = label.contiguous().view(label.shape[0], -1).float()
+
+        num = 2 * torch.sum(torch.mul(pred, label), dim=1) + smooth
+        den = torch.sum(pred.pow(exponent) + label.pow(exponent), dim=1) + smooth
+
+        loss = 1. - num / den
+
+        return loss

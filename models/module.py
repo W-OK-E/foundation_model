@@ -25,13 +25,21 @@ class ElitLightModel(L.LightningModule):
         self.train_metrics.update(pred, gt_mask)
         self.log("train/loss", loss, sync_dist=True, on_step=True, on_epoch=True)
         mean_metric,class_metrics = self.train_metrics.compute()
+        
+        precisions = []
+        for metric_name,metric_value  in class_metrics.items():
+            if("precision" in metric_name):
+                precisions.append(metric_value)
+        
+        mean_metric["m_prec"] = sum(precisions)/len(precisions)
+        
         for metric_name, metric_value in mean_metric.items():
             self.log(
                 f"train/{metric_name}",
                 metric_value,
                 sync_dist=True,
                 on_step=True,
-                on_epoch=True,
+                on_epoch=False,
             )
         self.train_metrics.reset()
         return loss
@@ -50,17 +58,24 @@ class ElitLightModel(L.LightningModule):
         
         loss = self.loss(pred, gt_mask)
         self.val_metrics.update(pred, gt_mask)
-        self.log("val/loss", loss, sync_dist=True, on_step=False, on_epoch=True)
+        self.log("val/loss", loss, sync_dist=True, on_step=True, on_epoch=True)
 
     def on_validation_epoch_end(self):
         mean_metrics, class_metrics = self.val_metrics.compute()
+        
+        precisions = []
+        for metric_name,metric_value  in class_metrics.items():
+            if("precision" in metric_name):
+                precisions.append(metric_value)
+        
+        mean_metrics["m_prec"] = sum(precisions)/len(precisions)
+
         for metric_name, metric_value in mean_metrics.items():
             self.log(
                 f"val/{metric_name}",
                 metric_value,
                 sync_dist=True,
-                on_step=False,
-                on_epoch=True,
+                on_step=False
             )
         self.val_metrics.reset()
 

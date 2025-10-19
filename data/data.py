@@ -2,6 +2,7 @@ import os
 import json
 import numpy as np
 import imageio.v3 as iio
+import torch
 from torch.utils.data import Dataset
 from .transforms import get_transforms
 
@@ -23,7 +24,7 @@ class SEGDataset(Dataset):
             print("="*15)
             print("Multi-Label Training")
             print("="*15)
-            self.ann_dir = os.path.join(root_dir,'masks_npy')
+            self.ann_dir = os.path.join(root_dir,'masks_pt')
         else:
             self.ann_dir = os.path.join(root_dir,"masks")
 
@@ -34,7 +35,7 @@ class SEGDataset(Dataset):
 
         if(multi_label):
             ext = self.anns[0].split('.')[1]
-            self.anns = [x.replace(ext,'npy') for x in self.anns]
+            self.anns = [x.replace(ext,'pt') for x in self.anns]
         
         if(mean is None):
             mean = (0.0,0.0,0.0)
@@ -60,7 +61,7 @@ class SEGDataset(Dataset):
             raise ValueError(f"Image not found at {image_path}")
         
         if(self.multi_label):
-            mask = np.load(ann_path)
+            mask = torch.load(ann_path).numpy() #Empirically torch.load was faster than np.load
         else:
             mask = iio.imread(ann_path)
             

@@ -31,6 +31,7 @@ dependencies = [
     "imagecodecs>=2025.3.30",
     "imageio>=2.37.0",
     "ipdb==0.13.13",
+    "ipykernel>=7.0.1",
     "ipython==8.37.0",
     "jedi==0.19.2",
     "jinja2==3.1.6",

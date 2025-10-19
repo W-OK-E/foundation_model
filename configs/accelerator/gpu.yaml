@@ -1,10 +1,10 @@
-devices: [0] #In order to force it to use a particular GPU, use "2" or just specify [2] check the link below
+devices: [1] #In order to force it to use a particular GPU, use "2" or just specify [2] check the link below
 num_workers: 8
 progress_bar_refresh_rate: 2
 sync_batchnorm: False
 accelerator: gpu
 precision: 16-mixed
-strategy: auto
+strategy: ddp_find_unused_parameters_true #Set to auto when on Single GPU
 num_nodes: 1
 
 
