@@ -44,8 +44,8 @@ trainer:
   strategy: ${accelerator.strategy}
   num_nodes: ${accelerator.num_nodes}
   precision: ${accelerator.precision}
-  max_epochs: 1
-  check_val_every_n_epoch: 1
+  max_epochs: 500
+  check_val_every_n_epoch: 10
 
 logger:
   _target_: pytorch_lightning.loggers.WandbLogger
@@ -78,7 +78,7 @@ mode: train # change that to eval to do the testing
 num_classes: ${dataset.num_classes}
 dry_run: False
 vis: True
-vis_coutn: True
+vis_count: 5
 hydra:
   run:
     dir: outputs/${hydra.job.name}/${now:%Y-%m-%d_%H-%M-%S}/${experiment_name}

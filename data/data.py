@@ -30,13 +30,16 @@ class SEGDataset(Dataset):
 
         self.images, self.anns = read_split(os.path.join(root_dir,'split.json'),split = split)
         if(dry_run):
-            self.images = self.images[:1]
-            self.anns = self.anns[:1]
+            self.images = self.images[:20]
+            self.anns = self.anns[:20]
 
+        self.images = self.images[:40]
+        self.anns = self.anns[:40]
+        
         if(multi_label):
             ext = self.anns[0].split('.')[1]
             self.anns = [x.replace(ext,'pt') for x in self.anns]
-        
+
         if(mean is None):
             mean = (0.0,0.0,0.0)
             std = (1.0,1.0,1.0)

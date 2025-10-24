@@ -92,10 +92,6 @@ class SegmentationMetrics(Metric):
             pred: B x C x H x W (predicted logits)
             gt: B x H x W (ground truth labels) or B x H x W x C (multi-label)
         """
-        print(pred.shape)
-        print(gt.shape)
-        import ipdb
-        ipdb.set_trace()
         assert len(pred.shape) == 4, "pred must be B x C x H x W"    
         # Flatten spatial dimensions: B x C x H x W -> (B*H*W) x C
         B, C, H, W = pred.shape
