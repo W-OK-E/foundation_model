@@ -209,16 +209,21 @@ def _viz_from_split(project_root, dataset_name, cfg, model=None):
         #     continue
 
         mask = iio.imread(mask_path)
-        if mask.ndim == 3:
-                mask = np.dot(mask[..., :3], [0.2989, 0.5870, 0.1140]).astype(np.uint8)
+        print("Mask Read:",mask.shape,"Values:",np.unique(mask))
+        # if mask.ndim == 3:
+        #         mask = np.dot(mask[..., :3], [0.2989, 0.5870, 0.1140]).astype(np.uint8)
         _,tf = get_transforms(orig.shape[:2])
         transformer = tf(image = orig, mask = mask)
         orig, mask = transformer["image"], transformer["mask"]
+        print("Transformed Mask:",np.unique(mask.cpu().numpy()))
+        import ipdb
+        ipdb.set_trace()
         # Prediction
         pred_arr = None
         if model is not None and orig is not None and mask is not None:
             try:
                 orig = orig.unsqueeze(0).to(model.device)
+                print("Original Mask:",orig.shape,np.unique(orig.cpu().numpy()))
                 model.eval()
                 with torch.no_grad():
                     out = model.model(orig)
@@ -279,6 +284,10 @@ def _viz_from_split(project_root, dataset_name, cfg, model=None):
 
         # --- Prediction ---
         ax2 = fig.add_subplot(gs[0, 2])
+        print("Unique Values in pred_arr",np.unique(pred_arr))
+        print("Cmap looks like:",cmap)
+        import ipdb
+        ipdb.set_trace()
         if pred_arr is not None:
             im_pred = ax2.imshow(pred_arr, cmap=cmap, norm=norm)
         else:

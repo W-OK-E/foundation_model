@@ -52,15 +52,18 @@ class ElitLightModel(L.LightningModule):
         pred = self.model(image)    
         
         # import ipdb
-        # print("Ground Truth Mask shape:",gt_mask.shape)
+        # print("Device:",pred.device)
         # print("Data types:",gt_mask.dtype,pred.dtype)
         # ipdb.set_trace()
         
         loss = self.loss(pred, gt_mask)
-        self.val_metrics.update(pred, gt_mask)
-        self.log("val/loss", loss, sync_dist=True, on_step=True, on_epoch=True)
-
-    def on_validation_epoch_end(self):
+        # print("VALIDATION")
+        # import ipdb
+        # ipdb.set_trace()
+        self.val_metrics.update(pred.detach(), gt_mask.detach()) #Moving the validation metric computation to the CPU
+        
+        #Because it is running OOM at the end of validation epoch, we will need to calculate the metrics
+        #at every step and then reset them immediately.
         mean_metrics, class_metrics = self.val_metrics.compute()
         
         precisions = []
@@ -75,9 +78,31 @@ class ElitLightModel(L.LightningModule):
                 f"val/{metric_name}",
                 metric_value,
                 sync_dist=True,
-                on_step=False
+                on_step=True
             )
         self.val_metrics.reset()
+        self.log("val/loss", loss, sync_dist=True, on_step=True, on_epoch=True)
+
+    def on_validation_epoch_end(self):
+        pass
+        #TODO: Remove this if the reset at every step works.
+        # mean_metrics, class_metrics = self.val_metrics.compute()
+        
+        # precisions = []
+        # for metric_name,metric_value  in class_metrics.items():
+        #     if("precision" in metric_name):
+        #         precisions.append(metric_value)
+        
+        # mean_metrics["m_prec"] = sum(precisions)/len(precisions)
+
+        # for metric_name, metric_value in mean_metrics.items():
+        #     self.log(
+        #         f"val/{metric_name}",
+        #         metric_value,
+        #         sync_dist=True,
+        #         on_step=False
+        #     )
+        # self.val_metrics.reset()
 
     @torch.no_grad()
     def test_step(self, batch):

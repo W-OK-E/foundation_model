@@ -1,6 +1,6 @@
 defaults:
   - network: elitnet
-  - loss: focal_multi_label
+  - loss: focal_multi_class
   - optimizer: adam
   - lr_scheduler: lr_plateau
 

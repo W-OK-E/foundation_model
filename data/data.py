@@ -32,7 +32,10 @@ class SEGDataset(Dataset):
         if(dry_run):
             self.images = self.images[:1]
             self.anns = self.anns[:1]
-
+        
+        #NOTE: Only in place for Cholec, reducing the total dataset size:
+        self.images = self.images[:16]
+        self.images = self.images[:16]
         if(multi_label):
             ext = self.anns[0].split('.')[1]
             self.anns = [x.replace(ext,'pt') for x in self.anns]
