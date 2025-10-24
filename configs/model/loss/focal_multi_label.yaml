@@ -1,9 +1,11 @@
 instance:
   _target_: loss.focal_multi_label.FocalLoss 
   gamma: 2.0
-  alpha: ~
+  alpha: ${dataset.cls_weights}
   reduction: mean
   task_type: multi-label
   num_classes: ${dataset.num_classes}
-  ignore_index: ~
+  batch_sz: ${dataset.global_batch_size}
+  img_sz: ${dataset.train_im_size}
+  ignore_index: 0
 

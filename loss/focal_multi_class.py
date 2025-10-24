@@ -35,7 +35,7 @@ class FocalLoss(nn.Module):
                         Shape: (batch_size, height, width)
         :return: Focal loss value
         """
-        
+
         if self.alpha is not None:
             alpha = self.alpha.to(inputs.device)
 

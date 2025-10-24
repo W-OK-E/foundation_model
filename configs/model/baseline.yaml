@@ -4,4 +4,4 @@ defaults:
   - optimizer: adam
   - lr_scheduler: lr_plateau
 
-name: BinaryDiceDummy
+name: Focal_Multi_class

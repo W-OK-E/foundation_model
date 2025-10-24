@@ -3,11 +3,12 @@ global_batch_size: 8
 img_size: [360, 640]
 num_channels: 3
 num_classes: 36
-ignore_index: 0
+ignore_index: ~
 class_names: ['bg','pupil', 'cornea', 'skin', 'iris', 'surgical_instrument', 'hand', 'speculum', 'other_instruments', 'lens', 'background', 'misc', 'misc', 'misc', 'misc', 'misc', 'misc', 'misc', 'misc', 'misc', 'misc', 'misc', 'misc', 'misc', 'misc', 'misc', 'misc', 'misc', 'misc', 'misc', 'misc', 'misc', 'misc', 'misc', 'misc', 'misc', 'misc']
 mean_per_channel: [0.30843202, 0.26594361, 0.21238147]
 std_per_channel: [0.30274876, 0.23929678, 0.20821963]
 multi_label: False
+class_weights:
 
 
 train_dataset:
