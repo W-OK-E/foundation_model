@@ -167,7 +167,7 @@ def _find_file_recursive(root_dir, basename):
             return join(dirpath, basename)
     return None
 
-
+@torch.no_grad()
 def _viz_from_split(project_root, dataset_name, cfg, model=None):
     """Generate 1x3 visualizations (Original, Mask, Prediction) for files listed
     in datasets/<dataset>/split.json under the "viz" key.
@@ -184,7 +184,7 @@ def _viz_from_split(project_root, dataset_name, cfg, model=None):
     with open(split_path, "r") as f:
         split = json.load(f)
 
-    viz_list = split.get("viz", [])
+    viz_list = split.get("train", [])[:20]
     out_dir = join(cfg.checkpoints.dirpath, "viz")
     os.makedirs(out_dir, exist_ok=True)
     
@@ -211,10 +211,14 @@ def _viz_from_split(project_root, dataset_name, cfg, model=None):
         mask = iio.imread(mask_path)
         # if mask.ndim == 3:
         #         mask = np.dot(mask[..., :3], [0.2989, 0.5870, 0.1140]).astype(np.uint8)
-        _,tf = get_transforms(orig.shape[:2])
+        tf,tf2 = get_transforms(orig.shape[:2])
         transformer = tf(image = orig, mask = mask)
         orig, mask = transformer["image"], transformer["mask"]
+<<<<<<< HEAD
         # print("Transformed Mask:",np.unique(mask.cpu().numpy()))
+=======
+        print("Transformed Mask:",np.unique(mask.cpu().numpy()))
+>>>>>>> 74101b7 (Post focal_weighted integration)
         # import ipdb
         # ipdb.set_trace()
         # Prediction
@@ -229,13 +233,19 @@ def _viz_from_split(project_root, dataset_name, cfg, model=None):
                 if out.dim() == 4 and out.size()[1] > 1:
                     out[:,0,:,:] = 0
                     pred = out.argmax(1).squeeze(0).cpu().numpy()
+<<<<<<< HEAD
                     # print("Prediction Reshaped to:",pred.shape,np.unique(pred))
+=======
+>>>>>>> 74101b7 (Post focal_weighted integration)
                     # import ipdb
                     # ipdb.set_trace()
                 else:
                     out_sig = torch.sigmoid(out)
                     pred = (out_sig.squeeze(0).squeeze(0).cpu().numpy() > 0.5).astype(np.uint8)
+<<<<<<< HEAD
                     # print("Prediction reshaped to:",pred.shape)
+=======
+>>>>>>> 74101b7 (Post focal_weighted integration)
                 # import ipdb
                 # ipdb.set_trace()
                 pred_arr = pred
@@ -331,7 +341,7 @@ def _select_dataset_by_split(datamodule, split):
         return datamodule.test_dataloader().dataset
     raise ValueError(f"Unsupported split for report: {split}")
 
-
+@torch.no_grad()
 def _compute_segmentation_report(model, datamodule, report_cfg):
     model.eval()
     split = report_cfg
@@ -389,7 +399,7 @@ def _compute_segmentation_report(model, datamodule, report_cfg):
 
     return mean_results,class_results
 
-
+@torch.no_grad()
 def run_post_training_report(cfg, model, datamodule):
     report_cfg = cfg.report
     # if not report_cfg.enabled:
@@ -452,8 +462,8 @@ def main(cfg):
             device = model.device
             trainer.test(model, datamodule=datamodule)
             model = model.to(device) #Just stay on the same device
-            run_post_training_visualization(cfg,model)
             run_post_training_report(cfg,model,datamodule)
+            run_post_training_visualization(cfg,model)
         elif cfg.mode == "predict":
             trainer.predict(model, datamodule=datamodule)
 
@@ -461,6 +471,7 @@ def main(cfg):
         _write_run_status(run_dir, "SUCCESS")
     except Exception as exc:
         # Write failure status and traceback for debugging
+        torch.cuda.empty_cache()
         tb = traceback.format_exc()
         _write_run_status(run_dir, "FAILED", details=tb)
         # re-raise so hydra/launcher can see the failure as well

@@ -19,6 +19,7 @@ class ElitLightModel(L.LightningModule):
     def training_step(self, batch):
         image,gt_mask = batch
         image,gt_mask = image.float(), gt_mask.long()
+
         pred = self.model(image)
         
         loss = self.loss(pred, gt_mask)
@@ -109,10 +110,8 @@ class ElitLightModel(L.LightningModule):
         image,gt_mask = batch
         image,gt_mask = image.float(), gt_mask.long()
         pred = self.model(image)
-        self.test_metrics.update(pred, gt_mask) #Oh so that is why they have implemented a custom Segmentation loss, so that 
+        self.test_metrics.update(pred.detach(), gt_mask.detach()) #Oh so that is why they have implemented a custom Segmentation loss, so that 
         #at every test step, they can update the confusion matrix.
-
-    def on_test_epoch_end(self):
         mean_metrics, class_metric = self.test_metrics.compute() #And after accumulating the test metrics at every step, they compute the final metrics here.
         for metric_name, metric_value in mean_metrics.items():
             self.log(
@@ -123,6 +122,10 @@ class ElitLightModel(L.LightningModule):
                 on_epoch=True,
             )
         self.test_metrics.reset()
+    
+    @torch.no_grad()
+    def on_test_epoch_end(self):
+        pass
     
     @torch.no_grad()
     def predict_step(self, batch, batch_idx: int, dataloader_idx: int = 0):
