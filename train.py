@@ -209,21 +209,19 @@ def _viz_from_split(project_root, dataset_name, cfg, model=None):
         #     continue
 
         mask = iio.imread(mask_path)
-        print("Mask Read:",mask.shape,"Values:",np.unique(mask))
         # if mask.ndim == 3:
         #         mask = np.dot(mask[..., :3], [0.2989, 0.5870, 0.1140]).astype(np.uint8)
         _,tf = get_transforms(orig.shape[:2])
         transformer = tf(image = orig, mask = mask)
         orig, mask = transformer["image"], transformer["mask"]
-        print("Transformed Mask:",np.unique(mask.cpu().numpy()))
-        import ipdb
-        ipdb.set_trace()
+        # print("Transformed Mask:",np.unique(mask.cpu().numpy()))
+        # import ipdb
+        # ipdb.set_trace()
         # Prediction
         pred_arr = None
         if model is not None and orig is not None and mask is not None:
             try:
                 orig = orig.unsqueeze(0).to(model.device)
-                print("Original Mask:",orig.shape,np.unique(orig.cpu().numpy()))
                 model.eval()
                 with torch.no_grad():
                     out = model.model(orig)
@@ -231,13 +229,13 @@ def _viz_from_split(project_root, dataset_name, cfg, model=None):
                 if out.dim() == 4 and out.size()[1] > 1:
                     out[:,0,:,:] = 0
                     pred = out.argmax(1).squeeze(0).cpu().numpy()
-                    print("Prediction Reshaped to:",pred.shape,np.unique(pred))
+                    # print("Prediction Reshaped to:",pred.shape,np.unique(pred))
                     # import ipdb
                     # ipdb.set_trace()
                 else:
                     out_sig = torch.sigmoid(out)
                     pred = (out_sig.squeeze(0).squeeze(0).cpu().numpy() > 0.5).astype(np.uint8)
-                    print("Prediction reshaped to:",pred.shape)
+                    # print("Prediction reshaped to:",pred.shape)
                 # import ipdb
                 # ipdb.set_trace()
                 pred_arr = pred
@@ -284,10 +282,10 @@ def _viz_from_split(project_root, dataset_name, cfg, model=None):
 
         # --- Prediction ---
         ax2 = fig.add_subplot(gs[0, 2])
-        print("Unique Values in pred_arr",np.unique(pred_arr))
-        print("Cmap looks like:",cmap)
-        import ipdb
-        ipdb.set_trace()
+        # print("Unique Values in pred_arr",np.unique(pred_arr))
+        # print("Cmap looks like:",cmap)
+        # import ipdb
+        # ipdb.set_trace()
         if pred_arr is not None:
             im_pred = ax2.imshow(pred_arr, cmap=cmap, norm=norm)
         else:
@@ -356,32 +354,38 @@ def _compute_segmentation_report(model, datamodule, report_cfg):
             images = images.float().to(model.device)
             gt = gt.long().to(model.device)
             logits = model.model(images)
+            # print("Logits Predicted by the model:",logits[:4,:4,3],logits.shape)
+            # import ipdb
+            # ipdb.set_trace()
+            def dice_score(pred, target, eps=1e-7):
+                """
+                Compute the Dice coefficient between two binary arrays.
+
+                Args:
+                    pred (np.ndarray): Binary prediction array (0s and 1s).
+                    target (np.ndarray): Binary ground truth array (0s and 1s).
+                    eps (float): Small value to avoid division by zero.
+
+                Returns:
+                    float: Dice coefficient in [0, 1].
+                """
+                pred = np.asarray(pred).astype(np.bool_)
+                target = np.asarray(target).astype(np.bool_)
+
+                intersection = np.logical_and(pred, target).sum()
+                dice = (2. * intersection + eps) / (pred.sum() + target.sum() + eps)
+                return dice
+
+            preds = logits.argmax(dim=1)
+            print("Gt shape:",gt.shape,"Dtype:",gt.dtype)
+            print(dice_score(preds.cpu().numpy(),gt.cpu().numpy()))
+            # import ipdb; ipdb.set_trace()
             metrics_obj.update(logits, gt)
 
     mean_results,class_results = metrics_obj.compute()
-
-    # Filter based on requested metrics
-    requested = "partial"
-    if "all" not in requested:
-        filtered = {}
-        for key, value in mean_results.items():
-            if key in requested:
-                filtered[key] = value
-            elif key.startswith("class_"):
-                if "per_class_iou" in requested and key.endswith("_iou"):
-                    filtered[key] = value
-                if "per_class_dice" in requested and key.endswith("_dice"):
-                    filtered[key] = value
-        for key, value in class_results.items():
-            if key in requested:
-                filtered[key] = value
-            elif key.startswith("class_"):
-                if "per_class_iou" in requested and key.endswith("_iou"):
-                    filtered[key] = value
-                if "per_class_dice" in requested and key.endswith("_dice"):
-                    filtered[key] = value
-
-        results = filtered
+    print("Mean Metrics:",mean_results,"\n",class_results)
+    import ipdb
+    ipdb.set_trace()
 
     return mean_results,class_results
 
