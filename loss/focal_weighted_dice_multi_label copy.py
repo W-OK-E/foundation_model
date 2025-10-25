@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-
+import torch.nn.functional as F
 
 class WeightedDiceFocalLoss(nn.Module):
     def __init__(self, class_weights=None, dice_weight=0.5,ignore_index = 0):
