@@ -16,6 +16,7 @@ import imageio.v3 as iio
 
 from data.transforms import get_transforms
 from shutil import copyfile
+from utils.visualizer import visualize
 from omegaconf import OmegaConf
 from os.path import isfile, join
 from hydra.utils import instantiate
@@ -214,18 +215,14 @@ def _viz_from_split(project_root, dataset_name, cfg, model=None):
         tf,tf2 = get_transforms(orig.shape[:2])
         transformer = tf(image = orig, mask = mask)
         orig, mask = transformer["image"], transformer["mask"]
-<<<<<<< HEAD
         # print("Transformed Mask:",np.unique(mask.cpu().numpy()))
-=======
-        print("Transformed Mask:",np.unique(mask.cpu().numpy()))
->>>>>>> 74101b7 (Post focal_weighted integration)
         # import ipdb
         # ipdb.set_trace()
         # Prediction
         pred_arr = None
         if model is not None and orig is not None and mask is not None:
             try:
-                orig = orig.unsqueeze(0).to(model.device)
+                orig = orig.unsqueeze(0).to(model.device) #We are adding a batch.dimension
                 model.eval()
                 with torch.no_grad():
                     out = model.model(orig)
@@ -233,19 +230,11 @@ def _viz_from_split(project_root, dataset_name, cfg, model=None):
                 if out.dim() == 4 and out.size()[1] > 1:
                     out[:,0,:,:] = 0
                     pred = out.argmax(1).squeeze(0).cpu().numpy()
-<<<<<<< HEAD
-                    # print("Prediction Reshaped to:",pred.shape,np.unique(pred))
-=======
->>>>>>> 74101b7 (Post focal_weighted integration)
                     # import ipdb
                     # ipdb.set_trace()
                 else:
                     out_sig = torch.sigmoid(out)
                     pred = (out_sig.squeeze(0).squeeze(0).cpu().numpy() > 0.5).astype(np.uint8)
-<<<<<<< HEAD
-                    # print("Prediction reshaped to:",pred.shape)
-=======
->>>>>>> 74101b7 (Post focal_weighted integration)
                 # import ipdb
                 # ipdb.set_trace()
                 pred_arr = pred
@@ -254,8 +243,9 @@ def _viz_from_split(project_root, dataset_name, cfg, model=None):
                 pred_arr = None
 
         # Create figure
-
+        
         # Example class names and colors
+        visualize(cfg,orig[0],mask,pred_arr,i) #TODO
         class_names = cfg.dataset.class_names
         colors = COLORS[:len(class_names)]
 
@@ -387,7 +377,7 @@ def _compute_segmentation_report(model, datamodule, report_cfg):
                 return dice
 
             preds = logits.argmax(dim=1)
-            print("Gt shape:",gt.shape,"Dtype:",gt.dtype)
+            # print("Gt shape:",gt.shape,"Dtype:",gt.dtype)
             print(dice_score(preds.cpu().numpy(),gt.cpu().numpy()))
             # import ipdb; ipdb.set_trace()
             metrics_obj.update(logits, gt)

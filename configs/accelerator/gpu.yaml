@@ -1,4 +1,4 @@
-devices: 2 #In order to force it to use a particular GPU, use "2" or just specify [2] check the link below
+devices: [0,1] #In order to force it to use a particular GPU, use "2" or just specify [2] check the link below
 num_workers: 8
 progress_bar_refresh_rate: 2
 sync_batchnorm: False

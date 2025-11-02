@@ -25,14 +25,16 @@ for file in os.listdir(input_dir):
     h, w = data["size"]["height"], data["size"]["width"]
     mask = np.zeros((h, w), dtype=np.uint8)
 
+    num_labels_file = 0
     for obj in data["objects"]:
         class_name = obj["classTitle"]
+        num_labels += 1
         color = class_colors.get(class_name, 255)  # unknown → white
         pts = np.array(obj["points"]["exterior"], np.int32)
         cv2.fillPoly(mask, [pts], color)
-
+    
     out_name = os.path.splitext(file)[0] + "_mask.png"
     out_path = os.path.join(output_dir, out_name)
     cv2.imwrite(out_path, mask)
-
+    
     print(f"Saved mask: {out_path}")

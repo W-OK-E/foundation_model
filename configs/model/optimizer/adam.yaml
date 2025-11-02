@@ -1,6 +1,6 @@
 optim:
   _target_: torch.optim.Adam
-  lr: 0.005
+  lr: 0.0001
   weight_decay: 1e-5
   
 exclude_bias_from_wd: true

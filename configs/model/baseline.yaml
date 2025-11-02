@@ -1,7 +1,8 @@
+
+name: Focal_Multi_class
 defaults:
   - network: elitnet
-  - loss: focal_multi_class
+  - loss: focal_dice_wt_multi_class
   - optimizer: adam
   - lr_scheduler: lr_plateau
 
-name: Focal_Multi_class

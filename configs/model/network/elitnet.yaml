@@ -4,6 +4,6 @@ instance:
   num_classes : ${dataset.num_classes}
   layers : [4,8,16,24]
   kernel_sz : 3 
-  up_mode : 'up_conv'  
+  up_mode : 'pixelshuffle'  
   conv_bridge : True 
   shortcut : True

@@ -2,6 +2,8 @@ import pytorch_lightning as L
 import torch
 import torch.nn as nn
 from PIL import Image
+
+from utils.visualizer import visualize
 from .network.ElitNet import ElitNet
 from hydra.utils import instantiate
 
@@ -15,6 +17,8 @@ class ElitLightModel(L.LightningModule):
         self.train_metrics = instantiate(cfg.train_metrics)
         self.val_metrics = instantiate(cfg.val_metrics)
         self.test_metrics = instantiate(cfg.test_metrics)
+        self.val_steps = 0
+        self.viz_image_count = 0
 
     def training_step(self, batch):
         image,gt_mask = batch
@@ -43,14 +47,20 @@ class ElitLightModel(L.LightningModule):
                 on_epoch=False,
             )
         self.train_metrics.reset()
+        self.viz_image_count = 0
         return loss
 
     @torch.no_grad()
     def validation_step(self, batch:list):
         image,gt_mask = batch
         #Please apply appropriate type casting in your respective loss functions if needed donot change here.
+        
         image,gt_mask = image.float(), gt_mask.float() 
         pred = self.model(image)    
+    
+        # if(self.val_steps % 50 == 0  and self.viz_image_count < 5):
+        #     visualize(self.cfg,image[0],gt_mask[0],pred[0].cpu().numpy(),self.viz_image_count,self.val_steps)
+
         
         # import ipdb
         # print("Device:",pred.device)
@@ -83,6 +93,7 @@ class ElitLightModel(L.LightningModule):
             )
         self.val_metrics.reset()
         self.log("val/loss", loss, sync_dist=True, on_step=True, on_epoch=True)
+        self.val_steps += 1
 
     def on_validation_epoch_end(self):
         pass

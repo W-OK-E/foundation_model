@@ -2,11 +2,17 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+from collections.abc import Iterable
+
 class WeightedCrossEntropyDiceLoss(nn.Module):
     """Weighted CrossEntropy + Dice Loss for multiclass segmentation"""
-    def __init__(self, class_weights=None, dice_weight=0.5, ignore_index = 0):
+    def __init__(self, alpha=None, dice_weight=0.5, ignore_index = 0,num_classes = 0):
         super(WeightedCrossEntropyDiceLoss, self).__init__()
-        self.class_weights = class_weights
+        if isinstance(alpha, Iterable) and not (type(alpha) == str):
+            print("Class weights Set")
+            self.class_weights = torch.Tensor(alpha)
+        else:
+            self.class_weights = alpha
         self.dice_weight = dice_weight
         self.ignore_index = ignore_index
 
@@ -49,6 +55,7 @@ class WeightedCrossEntropyDiceLoss(nn.Module):
         return dice_loss
     
     def forward(self, inputs, targets):
-        ce = self.cross_entropy_loss(inputs, targets)
-        dice = self.dice_loss(inputs, targets)
+        self.class_weights = self.class_weights.to(inputs.device)
+        ce = self.cross_entropy_loss(inputs, targets.long())
+        dice = self.dice_loss(inputs, targets.long())
         return (1-self.dice_weight) * ce + self.dice_weight * dice

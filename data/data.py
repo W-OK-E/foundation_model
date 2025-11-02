@@ -77,6 +77,7 @@ class SEGDataset(Dataset):
         if self.transform is not None:
             transformer = self.transform(image = image, mask = mask)
             image, mask = transformer["image"], transformer["mask"]
+        
         return image, mask
     
 

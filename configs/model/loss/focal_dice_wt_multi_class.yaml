@@ -1,5 +1,6 @@
 instance:
   _target_: loss.focal_weighted_dice_multi_class.WeightedCrossEntropyDiceLoss 
-  class_weights: ${dataset.cls_weights}
+  alpha: ${dataset.cls_weights}
+  num_classes: ${dataset.num_classes}
   dice_weight: 0.5
   ignore_index: 0
