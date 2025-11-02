@@ -230,11 +230,13 @@ def _viz_from_split(project_root, dataset_name, cfg, model=None):
                 if out.dim() == 4 and out.size()[1] > 1:
                     out[:,0,:,:] = 0
                     pred = out.argmax(1).squeeze(0).cpu().numpy()
+                    # print("Prediction Reshaped to:",pred.shape,np.unique(pred))
                     # import ipdb
                     # ipdb.set_trace()
                 else:
                     out_sig = torch.sigmoid(out)
                     pred = (out_sig.squeeze(0).squeeze(0).cpu().numpy() > 0.5).astype(np.uint8)
+                    # print("Prediction reshaped to:",pred.shape)
                 # import ipdb
                 # ipdb.set_trace()
                 pred_arr = pred
