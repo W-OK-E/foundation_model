@@ -88,6 +88,7 @@ dependencies = [
     "stringzilla==4.0.7",
     "sympy==1.14.0",
     "tifffile>=2025.5.10",
+    "timm>=1.0.22",
     "tomli==2.2.1",
     "torch==2.8.0",
     "torchmetrics==1.8.2",
