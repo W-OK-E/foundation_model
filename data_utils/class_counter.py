@@ -25,6 +25,7 @@ def count_segmentation_classes(mask_dir, exts=(".png", ".jpg", ".bmp",".tif")):
             path = os.path.join(mask_dir, fname)
             # mask = np.array(Image.open(path))
             mask = iio.imread(path)
+            print(mask.shape)
             unique_classes.update(np.unique(mask))
 
     return unique_classes

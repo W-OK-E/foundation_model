@@ -67,6 +67,7 @@ def main(cfg):
         print("="*70)
         print("Errors during sanity checks")
         print("="*70)
+        print(exc)
 
 if __name__ == "__main__":
     main()

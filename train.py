@@ -77,9 +77,17 @@ def load_model(cfg, dict_config, wandb_id, callbacks):
     directory = cfg.checkpoints.dirpath
     #This will come in play when we want to test/evaluate the model
     if(cfg.mode == "eval" and isfile(join(directory, "best_dice_ckpt.ckpt"))):
-        checkpoint_path = join(directory, "best_dice_ckpt.ckpt")
+        # checkpoint_path = join(directory, "best_dice_ckpt.ckpt")
+        # logger = instantiate(cfg.logger, id=wandb_id, resume="allow")
+        # model = ElitLightModel(cfg.model)
+        # ckpt = torch.load(checkpoint_path)
+        # model = ElitLightModel.load_from_checkpoint(checkpoint_path, cfg=cfg.model)
+        #The best_dice_ckpt.ckpt will be loaded int he _viz_from_split() function
+        checkpoint_path = None
         logger = instantiate(cfg.logger, id=wandb_id, resume="allow")
-        model = ElitLightModel.load_from_checkpoint(checkpoint_path, cfg=cfg.model)
+        log_dict = {"model": dict_config["model"], "dataset": dict_config["dataset"]}
+        logger._wandb_init.update({"config": log_dict})
+        model = ElitLightModel(cfg.model)
         print(f"Loading form checkpoint ... {checkpoint_path}")
 
     #This makes sure training is resumed from the last checkpoint if available
@@ -397,7 +405,7 @@ def run_post_training_report(cfg, model, datamodule):
     # if not report_cfg.enabled:
     #     return
     print("Generating Post Training Report")
-    for split in ["test","train","val"]:
+    for split in ["test","train","val"][2:]:
         # report_cfg.split = split
         mean_results,class_results = _compute_segmentation_report(model, datamodule, split)
         out_dir = os.path.join(cfg.checkpoints.dirpath,"reports",split)

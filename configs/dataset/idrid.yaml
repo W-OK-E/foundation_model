@@ -1,5 +1,5 @@
 name: IDRiD
-global_batch_size: 1
+global_batch_size: 2
 img_size: [2848, 4288]
 train_im_size: [2944, 4352]
 num_channels: 3

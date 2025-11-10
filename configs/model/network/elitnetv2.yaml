@@ -1,5 +1,5 @@
 instance:
-  _target_: models.network.ElitNet.EliTNet
+  _target_: models.network.ElitNet.ElitNet
   in_channels : 3
   num_classes : ${dataset.num_classes}
   layers : [4,8,16,24]
@@ -11,4 +11,5 @@ instance:
   skip_conn: True 
   residual: True 
   causal: False
-  conv_type: 'MKConv2D'   #Options:('Conv2d', 'MKConv2D', 'DecomConv2D', 'SeparableConv2d')
+  conv_mode: 'Conv2d'   #Options:('Conv2d', 'MKConv2D', 'DecomConv2D', 'SeparableConv2d')
+
