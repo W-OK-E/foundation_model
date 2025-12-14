@@ -102,13 +102,35 @@ def load_model(cfg, dict_config, wandb_id, callbacks):
         log_dict = {"model": dict_config["model"], "dataset": dict_config["dataset"]}
         logger._wandb_init.update({"config": log_dict})
         model = ElitLightModel(cfg.model)
-        print("Instantiating ElitNet")
+        print("Instantiating the Model")
 
     trainer, strategy = cfg.trainer, cfg.trainer.strategy
     trainer = instantiate(
         trainer, strategy=strategy, logger=logger, callbacks=callbacks,
     )
     return trainer, model, checkpoint_path
+
+
+
+def denormalize_batch_torch(imgs_norm, mean, std, max_pixel_value=255.0):
+    """
+    Reverse Albumentations normalization for a batch of PyTorch tensors.
+    
+    Args:
+        imgs_norm: torch.Tensor of shape (B, C, H, W)
+        mean, std: list or tensor of per-channel values (len = C)
+        max_pixel_value: float, same as used during normalization (default 255.0)
+    
+    Returns:
+        imgs_denorm: torch.ByteTensor of shape (B, H, W, C)
+    """
+    mean = torch.tensor(mean, device=imgs_norm.device).view(1, -1, 1, 1)
+    std = torch.tensor(std, device=imgs_norm.device).view(1, -1, 1, 1)
+    
+    imgs_denorm = (imgs_norm * std + mean) #* max_pixel_value
+    imgs_denorm = imgs_denorm.clamp(0, 255).permute(0, 2, 3, 1).cpu().numpy()  # B x H x W x C
+    return imgs_denorm
+
 
 def project_init(cfg):
     print("Working directory set to {}".format(os.getcwd()))
@@ -201,118 +223,135 @@ def _viz_from_split(project_root, dataset_name, cfg, model=None):
     ckpt = torch.load(best_model_path)
     model.load_state_dict(ckpt['state_dict'])
 
-    for i, fname in enumerate(viz_list):
-        # mask file is typically the listed name (e.g. 0000000384_rgb_mask.png)
-        mask_path = os.path.join(dataset_dir,f'masks/{fname}')
-        img_path = os.path.join(dataset_dir,f'images/{fname}')
+    # for i, fname in enumerate(viz_list):
+    #     # mask file is typically the listed name (e.g. 0000000384_rgb_mask.png)
+    #     mask_path = os.path.join(dataset_dir,f'masks/{fname}')
+    #     img_path = os.path.join(dataset_dir,f'images/{fname}')
 
-        if mask_path is None and img_path is None:
-            print(f"Skipping visualization for {fname}: files not found in {dataset_dir}")
-            continue
+    #     if mask_path is None and img_path is None:
+    #         print(f"Skipping visualization for {fname}: files not found in {dataset_dir}")
+    #         continue
 
-        # Load original image
+    #     # Load original image
         
-        orig = iio.imread(img_path)
-        # if(cfg.dataset.multi_label):
-        #     print("Multi-Label Visualization yet to be implemented")
-        #     continue
+    #     orig = iio.imread(img_path)
+    #     # if(cfg.dataset.multi_label):
+    #     #     print("Multi-Label Visualization yet to be implemented")
+    #     #     continue
 
-        mask = iio.imread(mask_path)
-        # if mask.ndim == 3:
-        #         mask = np.dot(mask[..., :3], [0.2989, 0.5870, 0.1140]).astype(np.uint8)
-        tf,tf2 = get_transforms(orig.shape[:2])
-        transformer = tf(image = orig, mask = mask)
-        orig, mask = transformer["image"], transformer["mask"]
-        # print("Transformed Mask:",np.unique(mask.cpu().numpy()))
-        # import ipdb
-        # ipdb.set_trace()
-        # Prediction
-        pred_arr = None
-        if model is not None and orig is not None and mask is not None:
-            try:
-                orig = orig.unsqueeze(0).to(model.device) #We are adding a batch.dimension
-                model.eval()
-                with torch.no_grad():
-                    out = model.model(orig)
-                # out can be [B, C, H, W] or [B, 1, H, W]
-                if out.dim() == 4 and out.size()[1] > 1:
-                    out[:,0,:,:] = 0
-                    pred = out.argmax(1).squeeze(0).cpu().numpy()
-                    # print("Prediction Reshaped to:",pred.shape,np.unique(pred))
-                    # import ipdb
-                    # ipdb.set_trace()
-                else:
-                    out_sig = torch.sigmoid(out)
-                    pred = (out_sig.squeeze(0).squeeze(0).cpu().numpy() > 0.5).astype(np.uint8)
-                    # print("Prediction reshaped to:",pred.shape)
-                # import ipdb
-                # ipdb.set_trace()
-                pred_arr = pred
-            except Exception as exc:
-                print(f"Prediction failed for {fname}: {exc}")
-                pred_arr = None
+    #     mask = iio.imread(mask_path)
+    #     # if mask.ndim == 3:
+    #     #         mask = np.dot(mask[..., :3], [0.2989, 0.5870, 0.1140]).astype(np.uint8)
+    #     tf,tf2 = get_transforms(orig.shape[:2])
+    #     transformer = tf(image = orig, mask = mask)
+    #     orig, mask = transformer["image"], transformer["mask"]
+    #     # print("Transformed Mask:",np.unique(mask.cpu().numpy()))
+    #     # import ipdb
+    #     # ipdb.set_trace()
+    #     # Prediction
+    #     pred_arr = None
+    #     if model is not None and orig is not None and mask is not None:
+    #         try:
+    #             orig = orig.unsqueeze(0).to(model.device) #We are adding a batch.dimension
+    #             model.eval()
+    #             with torch.no_grad():
+    #                 out = model.model(orig)
+    #             print("Output Shape:",out.shape)
+    #             # out can be [B, C, H, W] or [B, 1, H, W]
+    #             # if out.dim() == 4 and out.size()[1] > 1:
+    #             #     out[:,0,:,:] = 0
+    #             #     pred = out.argmax(1).squeeze(0).cpu().numpy()
+    #             #     # print("Prediction Reshaped to:",pred.shape,np.unique(pred))
+    #             #     # import ipdb
+    #             #     # ipdb.set_trace()
+    #             # else:
+    #             #     out_sig = torch.sigmoid(out)
+    #             #     pred = (out_sig.squeeze(0).squeeze(0).cpu().numpy() > 0.5).astype(np.uint8)
+    #                 # print("Prediction reshaped to:",pred.shape)
+    #             # import ipdb
+    #             # ipdb.set_trace()
+    #             pred = out.argmax(dim = 1)
+    #             pred_arr = pred.permute(1,2,0).cpu().numpy()
+    #             unique_values, counts = np.unique(pred_arr, return_counts=True)
 
-        # Create figure
+    #             # Total number of elements in the array
+    #             total_elements = pred_arr.size
+
+    #             # Calculate percentage of each unique value
+    #             percentages = (counts / total_elements) * 100
+
+    #             # Combine the unique values, counts, and percentages into a structured format
+    #             result = list(zip(unique_values, counts, percentages))
+
+    #             # Print the result
+    #             for value, count, percentage in result:
+    #                 print(f"Value: {value}, Count: {count}, Percentage: {percentage:.2f}%")
+
+    #         except Exception as exc:
+    #             print(f"Prediction failed for {fname}: {exc}")
+    #             pred_arr = None
+
+    #     # Create figure
         
-        # Example class names and colors
-        visualize(cfg,orig[0],mask,pred_arr,i) #TODO
-        class_names = cfg.dataset.class_names
-        colors = COLORS[:len(class_names)]
+    #     # Example class names and colors
+    #     # visualize(cfg,orig[0],mask,pred_arr,i) #TODO
+    #     class_names = cfg.dataset.class_names
+    #     colors = COLORS[:len(class_names)]
 
-        # Create a discrete colormap
-        cmap = ListedColormap(colors)
-        norm = BoundaryNorm(np.arange(len(class_names) + 1) - 0.5, len(class_names))
+    #     # Create a discrete colormap
+    #     cmap = ListedColormap(colors)
+    #     norm = BoundaryNorm(np.arange(len(class_names) + 1) - 0.5, len(class_names))
 
-        # Use GridSpec to allocate space: 3 images + 1 for colorbar
-        fig = plt.figure(figsize=(16, 4))
-        gs = fig.add_gridspec(1, 4, width_ratios=[1,1,1,0.1], wspace=0.3)
+    #     # Use GridSpec to allocate space: 3 images + 1 for colorbar
+    #     fig = plt.figure(figsize=(16, 4))
+    #     gs = fig.add_gridspec(1, 4, width_ratios=[1,1,1,0.1], wspace=0.3)
 
-        # --- Original ---
-        ax0 = fig.add_subplot(gs[0, 0])
+    #     # --- Original ---
+    #     ax0 = fig.add_subplot(gs[0, 0])
 
-        #Obrain Arrays
-        orig = orig[0].permute(1,2,0).cpu().numpy()
-        mask = mask.cpu().numpy()
+    #     #Obrain Arrays
+    #     orig = orig[0].permute(1,2,0).cpu().numpy()
+    #     mask = mask.cpu().numpy()
         
-        if orig is not None:
-            ax0.imshow(np.array(orig))
-        else:
-            ax0.text(0.5, 0.5, "Original not found", ha="center")
-        ax0.set_title("Original")
-        ax0.axis("off")
+    #     if orig is not None:
+    #         ax0.imshow(np.array(orig))
+    #     else:
+    #         ax0.text(0.5, 0.5, "Original not found", ha="center")
+    #     ax0.set_title("Original")
+    #     ax0.axis("off")
 
-        # --- Mask ---
-        ax1 = fig.add_subplot(gs[0, 1])
-        if mask is not None:
-            im_mask = ax1.imshow(np.array(mask), cmap=cmap, norm=norm)
-        else:
-            ax1.text(0.5, 0.5, "Mask not found", ha="center")
-        ax1.set_title("Ground Truth Mask")
-        ax1.axis("off")
+    #     # --- Mask ---
+    #     ax1 = fig.add_subplot(gs[0, 1])
+    #     if mask is not None:
+    #         im_mask = ax1.imshow(np.array(mask), cmap=cmap, norm=norm)
+    #     else:
+    #         ax1.text(0.5, 0.5, "Mask not found", ha="center")
+    #     ax1.set_title("Ground Truth Mask")
+    #     ax1.axis("off")
 
-        # --- Prediction ---
-        ax2 = fig.add_subplot(gs[0, 2])
-        # print("Unique Values in pred_arr",np.unique(pred_arr))
-        # print("Cmap looks like:",cmap)
-        # import ipdb
-        # ipdb.set_trace()
-        if pred_arr is not None:
-            im_pred = ax2.imshow(pred_arr, cmap=cmap, norm=norm)
-        else:
-            ax2.text(0.5, 0.5, "Prediction not available", ha="center")
-        ax2.set_title("Prediction")
-        ax2.axis("off")
+    #     # --- Prediction ---
+    #     ax2 = fig.add_subplot(gs[0, 2])
+    #     # print("Unique Values in pred_arr",np.unique(pred_arr))
+    #     # print("Cmap looks like:",cmap)
+    #     # import ipdb
+    #     # ipdb.set_trace()
+    #     if pred_arr is not None:
+    #         im_pred = ax2.imshow(pred_arr, cmap=cmap, norm=norm)
+    #     else:
+    #         ax2.text(0.5, 0.5, "Prediction not available", ha="center")
+    #     ax2.set_title("Prediction")
+    #     ax2.axis("off")
 
-        # --- Colorbar in separate axis ---
-        ax_cbar = fig.add_subplot(gs[0, 3])
-        cb = plt.colorbar(im_mask, cax=ax_cbar, ticks=range(len(class_names)))
-        cb.ax.set_yticklabels(class_names)
-        cb.set_label("Classes")
+    #     # --- Colorbar in separate axis ---
+    #     ax_cbar = fig.add_subplot(gs[0, 3])
+    #     cb = plt.colorbar(im_mask, cax=ax_cbar, ticks=range(len(class_names)))
+    #     cb.ax.set_yticklabels(class_names)
+    #     cb.set_label("Classes")
 
-        out_path = join(out_dir, f"viz_{i:03d}_{os.path.splitext(os.path.basename(fname))[0]}.png")
-        fig.tight_layout()
-        fig.savefig(out_path)
-        plt.close(fig)
+    #     out_path = join(out_dir, f"viz_{i:03d}_{os.path.splitext(os.path.basename(fname))[0]}.png")
+    #     fig.tight_layout()
+    #     fig.savefig(out_path)
+    #     plt.close(fig)
 
 
 def _write_run_status(directory, status, details=None):
@@ -342,7 +381,7 @@ def _select_dataset_by_split(datamodule, split):
     raise ValueError(f"Unsupported split for report: {split}")
 
 @torch.no_grad()
-def _compute_segmentation_report(model, datamodule, report_cfg):
+def _compute_segmentation_report(model, datamodule, report_cfg,cfg):
     model.eval()
     split = report_cfg
     dataset = _select_dataset_by_split(datamodule, split)
@@ -354,7 +393,8 @@ def _compute_segmentation_report(model, datamodule, report_cfg):
 
     # Reuse the same metric class configured for test to ensure consistency
     metrics_obj = instantiate(model.cfg.test_metrics)
-
+    viz_dir = os.path.join(cfg.checkpoints.dirpath,"viz")
+    os.makedirs(viz_dir,exist_ok=True)
     with torch.no_grad():
         for batch in loader:
             if isinstance(batch, (list, tuple)) and len(batch) >= 2:
@@ -364,6 +404,8 @@ def _compute_segmentation_report(model, datamodule, report_cfg):
             images = images.float().to(model.device)
             gt = gt.long().to(model.device)
             logits = model.model(images)
+
+            images_vis = denormalize_batch_torch(images,cfg.dataset.mean_per_channel,cfg.dataset.std_per_channel) 
             # print("Logits Predicted by the model:",logits[:4,:4,3],logits.shape)
             # import ipdb
             # ipdb.set_trace()
@@ -385,8 +427,34 @@ def _compute_segmentation_report(model, datamodule, report_cfg):
                 intersection = np.logical_and(pred, target).sum()
                 dice = (2. * intersection + eps) / (pred.sum() + target.sum() + eps)
                 return dice
-
+            
             preds = logits.argmax(dim=1)
+            if(split == "val"):
+                for idx,(pred,target) in enumerate(zip(preds,gt)):
+                    preds_array = pred.cpu().numpy()
+                    gt_array = target.cpu().numpy()
+                    inp_im = images_vis[idx]
+                    # print("Preds array look like:",preds_array.shape)
+                    fig = plt.figure(figsize=(16, 4))
+                    gs = fig.add_gridspec(1, 4, width_ratios=[1,1,1,0.1], wspace=0.3)
+                    ax0 = fig.add_subplot(gs[0, 0])
+                    ax0.set_title("Input Image")
+                    ax1 = fig.add_subplot(gs[0,1])
+                    ax1.set_title("Target")
+                    ax2 = fig.add_subplot(gs[0,2])
+                    ax2.set_title("Prediction")
+
+                    cmap = ListedColormap(COLORS[:len(cfg.dataset.class_names)])
+                    print(inp_im.shape)
+                    im_inp = ax0.imshow(inp_im)
+                    target = ax1.imshow(gt_array,cmap = cmap)
+                    im_pred = ax2.imshow(preds_array,cmap = cmap)
+                    ax_cbar = fig.add_subplot(gs[0, 3])
+                    cb = plt.colorbar(im_pred, cax=ax_cbar, ticks=range(len(cfg.dataset.class_names)))
+                    cb.ax.set_yticklabels(cfg.dataset.class_names)
+                    cb.set_label("Classes")
+                    plt.savefig(os.path.join(viz_dir,f"Vis_{idx:04d}.png"))
+                    plt.close()
             # print("Gt shape:",gt.shape,"Dtype:",gt.dtype)
             print(dice_score(preds.cpu().numpy(),gt.cpu().numpy()))
             # import ipdb; ipdb.set_trace()
@@ -395,7 +463,7 @@ def _compute_segmentation_report(model, datamodule, report_cfg):
     mean_results,class_results = metrics_obj.compute()
     print("Mean Metrics:",mean_results,"\n",class_results)
     import ipdb
-    ipdb.set_trace()
+    # ipdb.set_trace()
 
     return mean_results,class_results
 
@@ -407,7 +475,7 @@ def run_post_training_report(cfg, model, datamodule):
     print("Generating Post Training Report")
     for split in ["test","train","val"][2:]:
         # report_cfg.split = split
-        mean_results,class_results = _compute_segmentation_report(model, datamodule, split)
+        mean_results,class_results = _compute_segmentation_report(model, datamodule, split,cfg)
         out_dir = os.path.join(cfg.checkpoints.dirpath,"reports",split)
         os.makedirs(out_dir, exist_ok=True)
 
@@ -460,10 +528,11 @@ def main(cfg):
         elif cfg.mode == "eval":
             print("Running Pilot Evaluation")
             device = model.device
-            trainer.test(model, datamodule=datamodule)
+            # trainer.test(model, datamodule=datamodule)
             model = model.to(device) #Just stay on the same device
-            run_post_training_report(cfg,model,datamodule)
             run_post_training_visualization(cfg,model)
+            run_post_training_report(cfg,model,datamodule)
+
         elif cfg.mode == "predict":
             trainer.predict(model, datamodule=datamodule)
 

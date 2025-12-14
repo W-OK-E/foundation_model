@@ -747,6 +747,7 @@ dependencies = [
     { name = "markupsafe" },
     { name = "matplotlib" },
     { name = "matplotlib-inline" },
+    { name = "monai" },
     { name = "mpmath" },
     { name = "multidict" },
     { name = "networkx" },
@@ -777,6 +778,7 @@ dependencies = [
     { name = "prompt-toolkit" },
     { name = "propcache" },
     { name = "protobuf" },
+    { name = "ptflops" },
     { name = "ptyprocess" },
     { name = "pure-eval" },
     { name = "pydantic" },
@@ -786,6 +788,7 @@ dependencies = [
     { name = "pyyaml" },
     { name = "requests" },
     { name = "scipy" },
+    { name = "segmentation-models-pytorch" },
     { name = "sentry-sdk" },
     { name = "separableconv-torch" },
     { name = "setuptools" },
@@ -799,7 +802,9 @@ dependencies = [
     { name = "timm" },
     { name = "tomli" },
     { name = "torch" },
+    { name = "torchinfo" },
     { name = "torchmetrics" },
+    { name = "torchstat" },
     { name = "torchvision" },
     { name = "tqdm" },
     { name = "traitlets" },
@@ -850,6 +855,7 @@ requires-dist = [
     { name = "markupsafe", specifier = "==3.0.2" },
     { name = "matplotlib", specifier = ">=3.10.6" },
     { name = "matplotlib-inline", specifier = "==0.1.7" },
+    { name = "monai", specifier = ">=1.5.1" },
     { name = "mpmath", specifier = "==1.3.0" },
     { name = "multidict", specifier = "==6.6.4" },
     { name = "networkx", specifier = "==3.4.2" },
@@ -880,6 +886,7 @@ requires-dist = [
     { name = "prompt-toolkit", specifier = "==3.0.52" },
     { name = "propcache", specifier = "==0.3.2" },
     { name = "protobuf", specifier = "==6.32.1" },
+    { name = "ptflops", specifier = ">=0.7.5" },
     { name = "ptyprocess", specifier = "==0.7.0" },
     { name = "pure-eval", specifier = "==0.2.3" },
     { name = "pydantic", specifier = "==2.11.9" },
@@ -889,6 +896,7 @@ requires-dist = [
     { name = "pyyaml", specifier = "==6.0.2" },
     { name = "requests", specifier = "==2.32.5" },
     { name = "scipy", specifier = "==1.15.3" },
+    { name = "segmentation-models-pytorch", specifier = ">=0.5.0" },
     { name = "sentry-sdk", specifier = "==2.37.1" },
     { name = "separableconv-torch", specifier = ">=0.1.0" },
     { name = "setuptools", specifier = "==80.9.0" },
@@ -901,7 +909,9 @@ requires-dist = [
     { name = "timm", specifier = ">=1.0.22" },
     { name = "tomli", specifier = "==2.2.1" },
     { name = "torch", specifier = "==2.8.0" },
+    { name = "torchinfo", specifier = ">=1.8.0" },
     { name = "torchmetrics", specifier = "==1.8.2" },
+    { name = "torchstat", specifier = ">=0.0.7" },
     { name = "torchvision", specifier = ">=0.23.0" },
     { name = "tqdm", specifier = "==4.67.1" },
     { name = "traitlets", specifier = "==5.14.3" },
@@ -1753,6 +1763,19 @@ wheels = [
 ]
 
 [[package]]
+name = "monai"
+version = "1.5.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+    { name = "torch" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/d0/19/53c7a105640542a324b3aef1213d18ffa53782f818b4f364a7db3a3e3a53/monai-1.5.1.tar.gz", hash = "sha256:24268e406511a7b00f734c0e741753845185c9d65c20a193704d99a9fe785d9f", size = 1686946, upload-time = "2025-09-22T17:39:59.574Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/83/3b/ee8c03de875507d8d56c86b5ede71514812d657a4a600844d3fa73478098/monai-1.5.1-py3-none-any.whl", hash = "sha256:3112e6ce63352f2ebb8a324a5c199b026aa8e61e914b4912cda3e890e6f7e7c5", size = 2674860, upload-time = "2025-09-22T17:39:57.624Z" },
+]
+
+[[package]]
 name = "mpmath"
 version = "1.3.0"
 source = { registry = "https://pypi.org/simple" }
@@ -2476,6 +2499,18 @@ wheels = [
 ]
 
 [[package]]
+name = "ptflops"
+version = "0.7.5"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "torch" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/05/dc/e679036cc222a9995e37754aefeee4a2b6e92d1b4956bee27b48182efec2/ptflops-0.7.5.tar.gz", hash = "sha256:84e437a3ccad1bb050c14c599a76555b345533287767da87758e38c9101a40a7", size = 18949, upload-time = "2025-08-20T17:17:47.838Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/11/66/3eea7b5f6cc3f6ae7acb125ef82c083d9bb759c7e43fd333cb39eb1e1cfe/ptflops-0.7.5-py3-none-any.whl", hash = "sha256:c47543d5209a21e0805b39a50d452c8f8f6f5b648684777490db6f9459bdda07", size = 19500, upload-time = "2025-08-20T17:17:46.402Z" },
+]
+
+[[package]]
 name = "ptyprocess"
 version = "0.7.0"
 source = { registry = "https://pypi.org/simple" }
@@ -2873,6 +2908,25 @@ wheels = [
 ]
 
 [[package]]
+name = "segmentation-models-pytorch"
+version = "0.5.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "huggingface-hub" },
+    { name = "numpy" },
+    { name = "pillow" },
+    { name = "safetensors" },
+    { name = "timm" },
+    { name = "torch" },
+    { name = "torchvision" },
+    { name = "tqdm" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/15/fa/d5a29d49240fb10bdead608b4d0c6805684a8f63b1f65863502be65b1ca4/segmentation_models_pytorch-0.5.0.tar.gz", hash = "sha256:cabba8aced6ef7bdcd6288dd9e1dc2840848aa819d539c455bd07aeceb2fdf96", size = 105150, upload-time = "2025-04-17T10:43:45.755Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ef/62/a50e5ac6191a498ad631e54df13d7e2d7eeb1325b15ee9ea1ee3ec065aaa/segmentation_models_pytorch-0.5.0-py3-none-any.whl", hash = "sha256:c34e09047771aa4dd8878b4f899e8125700cd1f8f7db16e58c37204154151a05", size = 154789, upload-time = "2025-04-17T10:43:43.668Z" },
+]
+
+[[package]]
 name = "sentry-sdk"
 version = "2.37.1"
 source = { registry = "https://pypi.org/simple" }
@@ -3261,6 +3315,15 @@ wheels = [
 ]
 
 [[package]]
+name = "torchinfo"
+version = "1.8.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/53/d9/2b811d1c0812e9ef23e6cf2dbe022becbe6c5ab065e33fd80ee05c0cd996/torchinfo-1.8.0.tar.gz", hash = "sha256:72e94b0e9a3e64dc583a8e5b7940b8938a1ac0f033f795457f27e6f4e7afa2e9", size = 25880, upload-time = "2023-05-14T19:23:26.377Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/72/25/973bd6128381951b23cdcd8a9870c6dcfc5606cb864df8eabd82e529f9c1/torchinfo-1.8.0-py3-none-any.whl", hash = "sha256:2e911c2918603f945c26ff21a3a838d12709223dc4ccf243407bce8b6e897b46", size = 23377, upload-time = "2023-05-14T19:23:24.141Z" },
+]
+
+[[package]]
 name = "torchmetrics"
 version = "1.8.2"
 source = { registry = "https://pypi.org/simple" }
@@ -3273,6 +3336,19 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/85/2e/48a887a59ecc4a10ce9e8b35b3e3c5cef29d902c4eac143378526e7485cb/torchmetrics-1.8.2.tar.gz", hash = "sha256:cf64a901036bf107f17a524009eea7781c9c5315d130713aeca5747a686fe7a5", size = 580679, upload-time = "2025-09-03T14:00:54.077Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/02/21/aa0f434434c48490f91b65962b1ce863fdcce63febc166ca9fe9d706c2b6/torchmetrics-1.8.2-py3-none-any.whl", hash = "sha256:08382fd96b923e39e904c4d570f3d49e2cc71ccabd2a94e0f895d1f0dac86242", size = 983161, upload-time = "2025-09-03T14:00:51.921Z" },
+]
+
+[[package]]
+name = "torchstat"
+version = "0.0.7"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "numpy" },
+    { name = "pandas" },
+    { name = "torch" },
+]
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/bc/fe/f483b907ca80c90f189cd892bb2ce7b2c256010b30314bbec4fc17d1b5f1/torchstat-0.0.7-py3-none-any.whl", hash = "sha256:b2b55fac368b494b86cdd3c298a5d8c5de7908bd3404a8df909c0824defef330", size = 11626, upload-time = "2018-11-02T12:00:23.958Z" },
 ]
 
 [[package]]

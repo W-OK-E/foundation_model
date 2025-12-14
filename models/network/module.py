@@ -1,3 +1,5 @@
+import sys
+sys.path.append('/mnt/data/omkumar/foundation_phase1/models/network')
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
