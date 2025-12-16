@@ -395,6 +395,7 @@ def _compute_segmentation_report(model, datamodule, report_cfg,cfg):
     metrics_obj = instantiate(model.cfg.test_metrics)
     viz_dir = os.path.join(cfg.checkpoints.dirpath,"viz")
     os.makedirs(viz_dir,exist_ok=True)
+    loss = instantiate(model.cfg.loss)['instance']
     with torch.no_grad():
         for batch in loader:
             if isinstance(batch, (list, tuple)) and len(batch) >= 2:
@@ -405,6 +406,7 @@ def _compute_segmentation_report(model, datamodule, report_cfg,cfg):
             gt = gt.long().to(model.device)
             logits = model.model(images)
 
+            loss(logits, gt)
             images_vis = denormalize_batch_torch(images,cfg.dataset.mean_per_channel,cfg.dataset.std_per_channel) 
             # print("Logits Predicted by the model:",logits[:4,:4,3],logits.shape)
             # import ipdb

@@ -46,16 +46,20 @@ class WeightedCrossEntropyDiceLoss(nn.Module):
         dice_scores = torch.stack(dice_scores)
         
         if self.class_weights is not None:
-            # Weight the dice scores
-            weighted_dice = dice_scores * self.class_weights
-            dice_loss = 1 - weighted_dice.mean()
+            # Apply weights: weighted average of (1 - dice_score) for each class
+            losses = 1 - dice_scores
+            print("Unweighted loss:",dice_scores.mean().item())
+            weighted_loss = (losses * self.class_weights).sum() / self.class_weights.sum()
+            print("Weighted Loss mean:",weighted_loss.item())
+            return weighted_loss
         else:
-            dice_loss = 1 - dice_scores.mean()
-            
-        return dice_loss
+            return 1 - dice_scores.mean()
     
     def forward(self, inputs, targets):
         self.class_weights = self.class_weights.to(inputs.device)
         ce = self.cross_entropy_loss(inputs, targets.long())
         dice = self.dice_loss(inputs, targets.long())
-        return (1-self.dice_weight) * ce + self.dice_weight * dice
+        print("CE Loss:",ce.item()," Dice Loss:",dice.item())
+        final_loss = (1-self.dice_weight) * ce + self.dice_weight * dice
+        print("Final Weighted Loss:",final_loss.item())
+        return final_loss
