@@ -8,34 +8,22 @@ OUT_DIR_BASE="/mnt/data/omkumar/foundation_phase1/vis_results"
 # -----------------------------
 # Dataset Directorry
 # -----------------------------
-DATA_DIR="/mnt/data/omkumar/foundation_phase1/datasets/IDRiD"
+DATA_DIR="/mnt/data/omkumar/foundation_phase1/datasets/Cholec"
 
 # -----------------------------
 # Inputs as lists (aligned by index)
 # -----------------------------
 RUN_DIRS=(
-  "/mnt/data/omkumar/foundation_phase1/checkpoints/IDRiD_Focal" #bg was ignored
-  "/mnt/data/omkumar/foundation_phase1/checkpoints/IDRiD_Conv2d_focal_dice_weighted_set2" #bg was not ignored
-  "/mnt/data/omkumar/foundation_phase1/checkpoints/IDRiD_IDRID",
-  "/mnt/data/omkumar/foundation_phase1/checkpoints/IDRiD_IDRID_128",
-  "/mnt/data/omkumar/foundation_phase1/checkpoints/IDRiD_mkconv_focal_dice_weighted"
+  "/mnt/data/omkumar/foundation_phase1/checkpoints/Cholec_Cholec_set3" 
 )
 
 IMAGES_FILES=(
-  "/mnt/data/omkumar/foundation_phase1/datasets/IDRiD/viz.txt"
-  "/mnt/data/omkumar/foundation_phase1/datasets/IDRiD/viz.txt"
-  "/mnt/data/omkumar/foundation_phase1/datasets/IDRiD/viz.txt"
-  "/mnt/data/omkumar/foundation_phase1/datasets/IDRiD/viz.txt"
-  "/mnt/data/omkumar/foundation_phase1/datasets/IDRiD/viz.txt"
+  "/mnt/data/omkumar/foundation_phase1/datasets/Cholec/viz.txt"
 )
 
 
 GT_DIRS=(
-  "/mnt/data/omkumar/foundation_phase1/datasets/IDRiD/masks"
-  "/mnt/data/omkumar/foundation_phase1/datasets/IDRiD/masks"
-  "/mnt/data/omkumar/foundation_phase1/datasets/IDRiD/masks"
-  "/mnt/data/omkumar/foundation_phase1/datasets/IDRiD/masks"
-  "/mnt/data/omkumar/foundation_phase1/datasets/IDRiD/masks"
+  "/mnt/data/omkumar/foundation_phase1/datasets/Cholec/masks"
 )
 
 DEVICE="cuda"   # or cpu

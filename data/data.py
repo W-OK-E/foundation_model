@@ -29,6 +29,12 @@ class SEGDataset(Dataset):
             self.ann_dir = os.path.join(root_dir,"masks")
 
         self.images, self.anns = read_split(os.path.join(root_dir,'split.json'),split = split)
+        
+        sample_ann_ext = os.listdir(self.ann_dir)[0].split('.')[1]
+        curr_ext = self.anns[0].split('.')[1]
+
+        if(sample_ann_ext != curr_ext):
+            self.anns = [x.replace(curr_ext,sample_ann_ext) for x in self.anns]
         if(dry_run):
             self.images = self.images[:1]
             self.anns = self.anns[:1]

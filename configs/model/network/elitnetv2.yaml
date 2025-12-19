@@ -1,6 +1,6 @@
 instance:
   _target_: models.network.ElitNet.ElitNet
-  in_channels : 3
+  in_channels : ${dataset.num_channels}
   num_classes : ${dataset.num_classes}
   layers : [4,8,16,24]
   kernel_sz : 3 

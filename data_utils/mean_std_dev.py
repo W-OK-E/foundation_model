@@ -3,6 +3,8 @@ import os
 import cv2
 import numpy as np
 import sys
+import imageio as iio
+import tqdm
 
 def main():
    
@@ -14,7 +16,7 @@ def main():
         print(f"Error: Directory {image_dir} does not exist.")
         sys.exit(1)
 
-    image_extensions = (".png", ".tif")
+    image_extensions = (".png", ".tif",".dcm")
     image_files = [f for f in os.listdir(image_dir) if f.lower().endswith(image_extensions)]
 
     if not image_files:
@@ -25,21 +27,22 @@ def main():
     sum_sq_channels = np.zeros(3, dtype=np.float64)
     total_pixels = 0
 
-    for img_file in image_files:
+    for img_file in tqdm.tqdm(image_files):
         img_path = os.path.join(image_dir, img_file)
-        img = cv2.imread(img_path) 
+        img = iio.imread(img_path) 
         if img is None:
             print(f"Warning: Could not read {img_file}")
             continue
         
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)  
         img = img.astype(np.float32) / 255.0  
 
+        if(len(img.shape) == 2):
+            img = img.reshape(*img.shape,1)
         h, w, c = img.shape
         total_pixels += h * w
 
-        sum_channels += img.reshape(-1, 3).sum(axis=0)
-        sum_sq_channels += (img.reshape(-1, 3) ** 2).sum(axis=0)
+        sum_channels += img.reshape(-1, c).sum(axis=0)
+        sum_sq_channels += (img.reshape(-1, c) ** 2).sum(axis=0)
 
     mean_per_channel = sum_channels / total_pixels
     std_per_channel = np.sqrt(sum_sq_channels / total_pixels - mean_per_channel**2)
