@@ -48,9 +48,9 @@ class WeightedCrossEntropyDiceLoss(nn.Module):
         if self.class_weights is not None:
             # Apply weights: weighted average of (1 - dice_score) for each class
             losses = 1 - dice_scores
-            print("Unweighted loss:",dice_scores.mean().item())
+            # print("Unweighted loss:",dice_scores.mean().item())
             weighted_loss = (losses * self.class_weights).sum() / self.class_weights.sum()
-            print("Weighted Loss mean:",weighted_loss.item())
+            # print("Weighted Loss mean:",weighted_loss.item())
             return weighted_loss
         else:
             return 1 - dice_scores.mean()
@@ -59,7 +59,7 @@ class WeightedCrossEntropyDiceLoss(nn.Module):
         self.class_weights = self.class_weights.to(inputs.device)
         ce = self.cross_entropy_loss(inputs, targets.long())
         dice = self.dice_loss(inputs, targets.long())
-        print("CE Loss:",ce.item()," Dice Loss:",dice.item())
+        # print("CE Loss:",ce.item()," Dice Loss:",dice.item())
         final_loss = (1-self.dice_weight) * ce + self.dice_weight * dice
-        print("Final Weighted Loss:",final_loss.item())
+        # print("Final Weighted Loss:",final_loss.item())
         return final_loss
