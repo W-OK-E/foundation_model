@@ -1,0 +1,46 @@
+name: INBreast
+global_batch_size: 1
+img_size: [4096, 3328]
+train_im_size: [4096, 3328]
+num_channels: 1
+num_classes: 3
+ignore_index: ~
+class_names: ["Background","Calcification","Tumor Mass"]
+mean_per_channel: [1.88113483]
+std_per_channel: [2.71970132]
+multi_label: False
+dry_run: False
+cls_weights:  [9.64273097e-03, 1.00000000e+00, 1.79272506e+02]
+
+train_dataset:
+  _partial_: false
+  _target_: data.data.SEGDataset
+  root_dir: ${data_dir}/INBreast/
+  split: train
+  img_size : ${..img_size}
+  mean: ${..mean_per_channel}
+  std: ${..std_per_channel}
+  multi_label: ${..multi_label}
+  dry_run: ${..dry_run}
+
+val_dataset:
+  _partial_: false
+  _target_: data.data.SEGDataset
+  root_dir: ${data_dir}/INBreast/
+  split: val
+  img_size : ${..img_size}
+  mean: ${..mean_per_channel}
+  std: ${..std_per_channel}
+  multi_label: ${..multi_label}
+  dry_run: ${..dry_run}
+
+test_dataset:
+  _partial_: false
+  _target_: data.data.SEGDataset
+  root_dir: ${data_dir}/INBreast/
+  split: test
+  img_size : ${..img_size}
+  mean: ${..mean_per_channel}
+  std: ${..std_per_channel}
+  multi_label: ${..multi_label}
+  dry_run: ${..dry_run}

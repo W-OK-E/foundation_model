@@ -4,7 +4,7 @@ Run a trained model on a list of images using a saved run folder (that contains
 and saves two outputs per input image: `pred` and `gt` (if GT provided).
 
 Usage:
-python run_on_list.py \
+python visualize.py \
   --run-dir /path/to/run_folder \
   --images-file /path/to/images.txt \
   --out-dir /path/to/out_dir \
@@ -23,6 +23,7 @@ import argparse
 import os
 from pathlib import Path
 import sys
+sys.path.append('/mnt/data/omkumar/foundation_phase1')
 import json
 import tqdm
 
@@ -154,11 +155,15 @@ def main():
     # Read image list
     img_list = []
     with open(args.images_file, 'r') as f:
+        img_count = 0
         for line in f:
+            img_count += 1  
             p = line.strip()
             if not p:
                 continue
             img_list.append(Path(os.path.join(data_dir,"images",p)))
+            if(img_count == 10):
+                break
 
     print(f'Found {len(img_list)} images to process')
 

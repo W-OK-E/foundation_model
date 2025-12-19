@@ -16,6 +16,7 @@ def create_split_json(folder_path, output_file="split.json"):
             file_path = os.path.join(folder_path, file_name)
 
             with open(file_path, "r") as f:
+                print("Reading:",file_path)
                 lines = [line.strip() for line in f if line.strip()]  # remove empty lines
             if(split_name == "test"):
                 splits["viz"] = lines[:8]

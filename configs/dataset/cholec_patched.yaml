@@ -1,7 +1,7 @@
-name: Cholec
-global_batch_size: 8
-img_size: [480, 854]
-train_im_size: [512, 896]
+name: Cholec_patched
+global_batch_size: 64
+img_size: [128, 128]
+train_im_size: [128, 128]
 num_channels: 3
 num_classes: 12
 ignore_index: ~
@@ -22,7 +22,7 @@ cls_weights:  [
 train_dataset:
   _partial_: false
   _target_: data.data.SEGDataset
-  root_dir: ${data_dir}/Cholec_15/
+  root_dir: ${data_dir}/Cholec_p/
   split: train
   img_size : ${..img_size}
   mean: ${..mean_per_channel}
@@ -33,7 +33,7 @@ train_dataset:
 val_dataset:
   _partial_: false
   _target_: data.data.SEGDataset
-  root_dir: ${data_dir}/Cholec_15/
+  root_dir: ${data_dir}/Cholec_p/
   split: val
   img_size : ${..img_size}
   mean: ${..mean_per_channel}
@@ -44,7 +44,7 @@ val_dataset:
 test_dataset:
   _partial_: false
   _target_: data.data.SEGDataset
-  root_dir: ${data_dir}/Cholec_15/
+  root_dir: ${data_dir}/Cholec_p/
   split: test
   img_size : ${..img_size}
   mean: ${..mean_per_channel}

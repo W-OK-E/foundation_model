@@ -432,7 +432,12 @@ def _compute_segmentation_report(model, datamodule, report_cfg,cfg):
             
             preds = logits.argmax(dim=1)
             if(split == "val"):
+                print("Generating Visualizations for Validation Split")
                 for idx,(pred,target) in enumerate(zip(preds,gt)):
+                    if(idx >= 10):
+                        print("Generated 10 visualizations, breaking now...")
+                        import ipdb
+                        ipdb.set_trace()
                     preds_array = pred.cpu().numpy()
                     gt_array = target.cpu().numpy()
                     inp_im = images_vis[idx]
@@ -458,7 +463,7 @@ def _compute_segmentation_report(model, datamodule, report_cfg,cfg):
                     plt.savefig(os.path.join(viz_dir,f"Vis_{idx:04d}.png"))
                     plt.close()
             # print("Gt shape:",gt.shape,"Dtype:",gt.dtype)
-            print(dice_score(preds.cpu().numpy(),gt.cpu().numpy()))
+            # print(dice_score(preds.cpu().numpy(),gt.cpu().numpy()))
             # import ipdb; ipdb.set_trace()
             metrics_obj.update(logits, gt)
 

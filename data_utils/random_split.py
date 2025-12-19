@@ -73,6 +73,9 @@ def split_dataset(
     first_image_path = os.path.join(images_dir, img_files[0])
     try:
         image = iio.imread(first_image_path)
+        shape = image.shape
+        
+
         shape_str = f"{img_files[0]}: {image.shape}"
         with open(os.path.join(output_dir, "image_shape.txt"), "w") as f:
             f.write(shape_str + "\n")
