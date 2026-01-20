@@ -1,3 +1,0 @@
-instance:
-  _target_: loss.loss.BCEDiceLoss
-  ignore_index: 0

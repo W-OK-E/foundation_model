@@ -1,9 +1,0 @@
-instance:
-  _target_: models.network.ElitNet.ElitNet
-  in_channels : 3
-  num_classes : ${dataset.num_classes}
-  layers : [4,8,16,24]
-  kernel_sz : 3 
-  up_mode : 'pixelshuffle'  
-  conv_bridge : True 
-  shortcut : True

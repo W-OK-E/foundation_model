@@ -1,3 +1,0 @@
-instance:
-  _target_: loss.loss.CELoss
-  ignore_index: 0

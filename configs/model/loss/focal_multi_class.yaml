@@ -1,8 +1,0 @@
-instance:
-  _target_: loss.focal_multi_class.FocalLoss 
-  gamma: 2.0
-  alpha: ${dataset.cls_weights}
-  reduction: mean
-  task_type: multi-class
-  num_classes: ${dataset.num_classes}
-  ignore_index: 0

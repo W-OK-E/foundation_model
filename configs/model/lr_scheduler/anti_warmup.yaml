@@ -1,3 +1,0 @@
-_partial_: true
-_target_: utils.lr_scheduler.AntiWarmupLR
-warmup_steps: 10

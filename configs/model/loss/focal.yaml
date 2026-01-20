@@ -1,5 +1,0 @@
-instance:
-  _target_: loss.loss.FocalLoss 
-  gamma: 2.0
-  alpha: 0.25
-  size_average: true

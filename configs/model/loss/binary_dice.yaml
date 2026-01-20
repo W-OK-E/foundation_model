@@ -1,3 +1,0 @@
-instance:
-  _target_: loss.loss.BinaryDiceLoss
-  ignore_index : None
