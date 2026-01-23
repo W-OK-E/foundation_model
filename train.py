@@ -452,7 +452,7 @@ def _compute_segmentation_report(model, datamodule, report_cfg,cfg):
                     ax2.set_title("Prediction")
 
                     cmap = ListedColormap(COLORS[:len(cfg.dataset.class_names)])
-                    print(inp_im.shape)
+                    # print(inp_im.shape)
                     im_inp = ax0.imshow(inp_im)
                     target = ax1.imshow(gt_array,cmap = cmap)
                     im_pred = ax2.imshow(preds_array,cmap = cmap)

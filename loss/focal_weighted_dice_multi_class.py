@@ -56,7 +56,7 @@ class WeightedCrossEntropyDiceLoss(nn.Module):
             return 1 - dice_scores.mean()
     
     def forward(self, inputs, targets):
-        print("Shape:",inputs.shape,targets.shape)
+        # print("Shape:",inputs.shape,targets.shape)
         self.class_weights = self.class_weights.to(inputs.device)
         ce = self.cross_entropy_loss(inputs, targets.long())
         dice = self.dice_loss(inputs, targets.long())

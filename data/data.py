@@ -62,29 +62,45 @@ class SEGDataset(Dataset):
         return len(self.images)
     
     def __getitem__(self, index):
-        image_path = os.path.join(self.image_dir, self.images[index])
-        ann_path = os.path.join(self.ann_dir, self.anns[index])
-        
-        image = iio.imread(image_path)
-        if image is None:
-            raise ValueError(f"Image not found at {image_path}")
-        
-        if(self.multi_label):
-            mask = torch.load(ann_path).numpy() #Empirically torch.load was faster than np.load
-        else:
-            mask = iio.imread(ann_path)
+        while True:
+            image_path = os.path.join(self.image_dir, self.images[index])
+            ann_path = os.path.join(self.ann_dir, self.anns[index])
             
-            if(mask is None):
-                raise ValueError(f"Mask not found at {ann_path}")
+            image = iio.imread(image_path)
             
-            if mask.ndim == 3:
-                mask = np.dot(mask[..., :3], [0.2989, 0.5870, 0.1140]).astype(np.uint8)
+            if image is None:
+                raise ValueError(f"Image not found at {image_path}")
+            
+            if self.multi_label:
+                mask = torch.load(ann_path).numpy()
+            else:
+                mask = iio.imread(ann_path)
+                if mask is None:
+                    raise ValueError(f"Mask not found at {ann_path}")
+                
+                if mask.ndim == 3:
+                    mask = np.dot(
+                        mask[..., :3], [0.2989, 0.5870, 0.1140]
+                    ).astype(np.uint8)
+
+                if not (image.ndim == 3 and image.shape[2] == 3):
+                    index = (index + 1) % len(self.images)
+                    continue
+
+                # then check size
+                if image.shape[0] == 480 and image.shape[1] == 854 \
+                and mask.shape[0] == 480 and mask.shape[1] == 854:
+                    break
+
+                index = (index + 1) % len(self.images)
 
         if self.transform is not None:
-            transformer = self.transform(image = image, mask = mask)
-            image, mask = transformer["image"], transformer["mask"].long()
+            transformed = self.transform(image=image, mask=mask)
+            image = transformed["image"]
+            mask = transformed["mask"].long()
 
         return image, mask
+
     
 
 #This is the sample MRI Dataset Class

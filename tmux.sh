@@ -1,3 +1,4 @@
+tmux new-session -s cholec_1fps 'export CUDA_VISIBLE_DEVICES="0,1"; exec bash'
 <<<<<<< HEAD
 tmux new-session -s cataract_patched 'export CUDA_VISIBLE_DEVICES="0"; exec bash'
 =======
