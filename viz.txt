@@ -1,5 +1,10 @@
-50997461.dcm
-53582683.dcm
-53587663.dcm
-50997515.dcm
-22670324.dcm
+frame_0101.pt
+frame_0056.pt
+frame_0023.pt
+frame_0115.pt
+frame_0017.pt
+frame_0065.pt
+frame_0059.pt
+frame_0160.pt
+frame_0203.pt
+frame_0034.pt

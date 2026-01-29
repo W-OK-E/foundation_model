@@ -10,9 +10,9 @@ from torchmetrics.classification import (
 )
 
 
-class SegmentationMetrics(Metric):
+class SegmentationMetrics3D(Metric):
     """
-    Computes the Mean IoU and Dice Score for semantic segmentation using TorchMetrics.
+    Computes the Mean IoU and Dice Score for 3D semantic segmentation using TorchMetrics.
     Does it both per-class and overall.
 
     Args:
@@ -22,14 +22,13 @@ class SegmentationMetrics(Metric):
         multi_label (bool): whether the task is multi-label classification.
     """
 
-    def __init__(self, num_classes, class_names, ignore_index=None, multi_label=False, is_3d=False):
+    def __init__(self, num_classes, class_names, ignore_index=None, multi_label=False):
 
         super().__init__()
         self.num_classes = num_classes
         self.ignore_index = ignore_index
         self.class_names = class_names
         self.multi_label = multi_label
-        self.is_3d = is_3d
         
         # Create metric collection with all metrics
         metrics = {
@@ -88,24 +87,16 @@ class SegmentationMetrics(Metric):
 
     def update(self, pred: torch.Tensor, gt: torch.Tensor):
         """
-        Update all metrics.
+        Update all metrics for 3D data.
         Args:
-            pred: B x C x H x W (predicted logits)
-            gt: B x H x W (ground truth labels) or B x H x W x C (multi-label)
+            pred: B x C x D x H x W (predicted logits)
+            gt: B x D x H x W (ground truth labels) or B x D x H x W x C (multi-label)
         """
-
-        if not self.is_3d:
-            assert len(pred.shape) == 4, "pred must be B x C x H x W"    
-            # Flatten spatial dimensions: B x C x H x W -> (B*H*W) x C
-            B, C, H, W = pred.shape
-            pred_flat = pred.permute(0, 2, 3, 1).reshape(-1, C)  # (B*H*W) x C
-        else:
-            assert len(pred.shape) == 5, "pred must be B x C x D x H x W"    
-            # Flatten spatial dimensions: B x C x D x H x W -> (B*D*H*W) x C
-            B, C, D, H, W = pred.shape
-            pred_flat = pred.permute(0, 2, 3, 4, 1).reshape(-1, C)  # (B*D*H*W) x C
-            
-        gt_flat = gt.reshape(-1)  # (B*H*W)
+        assert len(pred.shape) == 5, "pred must be B x C x D x H x W"    
+        # Flatten spatial dimensions: B x C x D x H x W -> (B*D*H*W) x C
+        B, C, D, H, W = pred.shape
+        pred_flat = pred.permute(0, 2, 3, 4, 1).reshape(-1, C)  # (B*D*H*W) x C
+        gt_flat = gt.reshape(-1)  # (B*D*H*W)
         gt_flat = gt_flat.long()
         # print("Moving Metrics to:",pred_flat.device)
         # import ipdb
@@ -145,5 +136,3 @@ class SegmentationMetrics(Metric):
     def reset(self):
         """Reset all metrics."""
         self.metrics.reset()
-
-

@@ -12,6 +12,7 @@ model:
     class_names: ${dataset.class_names}
     ignore_index: ${dataset.ignore_index}
     multi_label: ${dataset.multi_label}
+    is_3d: ${dataset.is_3d}
 
   val_metrics:
     _target_: metrics.torch_metrics.SegmentationMetrics
@@ -19,6 +20,7 @@ model:
     class_names: ${dataset.class_names}
     ignore_index: ${dataset.ignore_index}
     multi_label: ${dataset.multi_label}
+    is_3d: ${dataset.is_3d}
 
   test_metrics:
     _target_: metrics.torch_metrics.SegmentationMetrics
@@ -26,7 +28,8 @@ model:
     class_names: ${dataset.class_names}
     ignore_index: ${dataset.ignore_index}
     multi_label: ${dataset.multi_label}
-
+    is_3d: ${dataset.is_3d}
+    
 datamodule:
   _target_: data.datamodule.SegDataModule
   train_dataset: ${dataset.train_dataset}

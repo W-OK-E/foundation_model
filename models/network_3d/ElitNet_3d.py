@@ -3,7 +3,7 @@ sys.path.append("/mnt/data/omkumar/foundation_phase1/models/network_3d")
 
 import torch.nn as nn
 from typing import List
-from blocksv2_3d import ConvBlock3d, DoubleAttBlock3d, UpConvBlock3d
+from .blocksv2_3d import ConvBlock3d, DoubleAttBlock3d, UpConvBlock3d
 
 class ELiTNetEncoder3d(nn.Module):
     def __init__(

@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from .pixel_shuffle import PixelShuffle3d 
 # from module_3d import MKConv2D, CausalConv2d, DecomConv2D
 
 def conv1x1_3d(in_planes, out_planes, stride=1):
@@ -141,7 +142,7 @@ class AttConvBlock3d(torch.nn.Module):
             self.skip1_connection_residual_block = nn.Conv3d(out_c, out_c, kernel_size=k_sz, padding='same')
 
             self.mpool2 = nn.MaxPool3d(kernel_size=2, stride=2, padding=0)
-            self.softmax2_blocks = nn.Conv3d(out_c, out_c, kernel_size=k_sz, padding='same', dilation=4)
+            self.softmax2_blocks = nn.Conv3d(out_c, out_c, kernel_size=k_sz, padding='same', dilation=2)
             self.skip2_connection_residual_block = nn.Conv3d(out_c, out_c, kernel_size=k_sz, padding='same')
 
             self.mpool3 = nn.MaxPool3d(kernel_size=3, stride=2, padding=1)
@@ -151,7 +152,7 @@ class AttConvBlock3d(torch.nn.Module):
             )
 
             self.interpolation3 = nn.Upsample(scale_factor=2, mode='nearest')
-            self.softmax4_blocks = nn.Conv3d(out_c, out_c, kernel_size=k_sz, padding='same', dilation=4)
+            self.softmax4_blocks = nn.Conv3d(out_c, out_c, kernel_size=k_sz, padding='same', dilation=2)
 
             self.interpolation2 = nn.Upsample(scale_factor=2, mode='nearest')
             self.softmax5_blocks = nn.Conv3d(out_c, out_c, kernel_size=k_sz, padding='same', dilation=2)
@@ -218,7 +219,8 @@ class UpsampleBlock3d(torch.nn.Module):
             block.append(nn.Conv3d(in_c, out_c, kernel_size=1))
         elif up_mode == 'pixelshuffle':
             # For 3D, use ConvTranspose3d as equivalent to PixelShuffle
-            block.append(nn.ConvTranspose3d(in_c, out_c, kernel_size=2, stride=2))
+            block.append(nn.ConvTranspose3d(in_c, 4*out_c, kernel_size=1))
+            block.append(PixelShuffle3d(upscale_factor=2))
         else:
             raise Exception('Upsampling mode not supported')
 

@@ -1,4 +1,5 @@
 import os
+import torch
 import random
 import argparse
 import numpy as np
@@ -72,14 +73,22 @@ def split_dataset(
     # Inspect the first image and save its shape
     first_image_path = os.path.join(images_dir, img_files[0])
     try:
-        image = iio.imread(first_image_path)
-        shape = image.shape
+        if first_image_path.lower().endswith(('.nii', '.nii.gz')):
+            import nibabel as nib
+            image = nib.load(first_image_path)
+            shape = image.shape
+        elif first_image_path.lower().endswith(('.pt', '.pth')):
+            image = torch.load(first_image_path)
+            shape = tuple(image.shape)
+        else:
+            image = iio.imread(first_image_path)
+            shape = image.shape
         
 
-        shape_str = f"{img_files[0]}: {image.shape}"
+        shape_str = f"{img_files[0]}: {shape}"
         with open(os.path.join(output_dir, "image_shape.txt"), "w") as f:
             f.write(shape_str + "\n")
-        print(f"Wrote shape of {img_files[0]} to image_shape.txt: {image.shape}")
+        print(f"Wrote shape of {img_files[0]} to image_shape.txt: {shape}")
     except Exception as e:
         print(f"Failed to read {first_image_path}: {e}")
 

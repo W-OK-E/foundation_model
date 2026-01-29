@@ -16,7 +16,7 @@ def test_3d_model():
     print("="*70)
     
     # Model parameters
-    in_channels = 1
+    in_channels = 3
     num_classes = 2
     layers = [32, 64, 128, 256, 512]  # Channel dimensions
     kernel_sz = 3
@@ -58,7 +58,7 @@ def test_3d_model():
     # Create 3D input tensor (batch_size, channels, depth, height, width)
     print("\n2. Creating 3D input tensor...")
     batch_size = 2
-    depth, height, width = 32, 64, 64
+    depth, height, width = 128,128,128
     input_tensor = torch.randn(batch_size, in_channels, depth, height, width).to(device)
     print(f"✓ Input tensor shape: {input_tensor.shape}")
     print(f"  - Batch size: {batch_size}")
@@ -92,8 +92,10 @@ def test_3d_model():
     # Test with different input sizes
     print("\n4. Testing with different input sizes...")
     test_sizes = [
-        (1, 1, 16, 32, 32),
-        (2, 1, 64, 128, 128),
+        # (1, 128, 128, 128),
+        # (1, 128, 128, 128),
+        (4,3,128,128,128),
+        # (1,1,128,128,128)
     ]
     
     for size in test_sizes:

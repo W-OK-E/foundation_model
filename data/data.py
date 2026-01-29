@@ -101,7 +101,8 @@ class SEGDataset(Dataset):
 
         return image, mask
 
-    
+
+
 
 #This is the sample MRI Dataset Class
 """
