@@ -32,6 +32,7 @@ model:
     
 datamodule:
   _target_: data.datamodule.SegDataModule
+  _recursive_: false
   train_dataset: ${dataset.train_dataset}
   val_dataset: ${dataset.val_dataset}
   test_dataset: ${dataset.test_dataset}

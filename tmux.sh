@@ -1,1 +1,1 @@
-tmux new-session -s brats_3d 'export CUDA_VISIBLE_DEVICES="0,1"; exec bash'
+tmux new-session -s us_nerve_idrid 'export CUDA_VISIBLE_DEVICES="1"; exec zsh'

@@ -57,7 +57,8 @@ class MKConv2D(nn.Module):
     
     def _initialize_convs(self, input_size):
         # Determine the maximum allowable kernel size based on input dimensions
-        max_kernel_size = (min(input_size) // 3) * 2  # Two-thirds of the smallest input dimension
+        # Cap at 31 to avoid excessive memory usage and slow convolutions
+        max_kernel_size = min(31, (min(input_size) // 3) * 2) 
         
         # Generate kernel sizes within the allowed range
         possible_kernel_sizes = generate_series(3, max_kernel_size)  # Odd sizes: 1, 3, 5, ..., max_kernel_size

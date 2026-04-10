@@ -7,40 +7,34 @@ def get_transforms(img_size: tuple = (512, 512),  mean = (0, 0, 0), std = (1.0, 
     """
     Returns the train and validation transforms for image segmentation tasks.
     
-    Args:
-        img_size (tuple): The size(hxw) to which images will be padded, must be a multiple of 128.
+    If the image is smaller than img_size, it will be reflect padded to 
+    the nearest multiple of 128 >= img_size.
+    If it is larger, it will be randomly cropped (during training) to that size.
     """
-    orig_h,orig_w = img_size
-    pad_h = (orig_h / 128)
-    pad_w = (orig_w / 128)
-    if pad_h != int(pad_h):
-        pad_h = (int(pad_h) + 1) * 128
-    else:
-        pad_h = orig_h
-    if pad_w != int(pad_w):
-        pad_w = (int(pad_w) + 1) * 128
-    else:
-        pad_w = orig_w
+    target_h, target_w = img_size
     
-    if(get_size):
-        return pad_h,pad_w
-    #Alright so it must pad it to be of size that is a multiple of 128, and then other optional transformations
-    #can be applied.
+    # Pad size must be a multiple of 128
+    pad_h = int((target_h + 127) // 128 * 128)
+    pad_w = int((target_w + 127) // 128 * 128)
+    
+    if get_size:
+        return pad_h, pad_w
+
     train_transforms = A.Compose([
-            A.PadIfNeeded(min_height=pad_h, min_width=pad_w, border_mode = cv2.BORDER_REFLECT, p=1),
-            A.HorizontalFlip(p = 0.5),
-            A.VerticalFlip(p = 0.5),
-            A.Normalize(
-            mean = mean, std = std, max_pixel_value = 255.0
-            ),
+            # Pad if image is smaller than target
+            A.PadIfNeeded(min_height=pad_h, min_width=pad_w, border_mode=cv2.BORDER_REFLECT, p=1),
+            # Random crop if image is larger than target
+            A.RandomCrop(height=pad_h, width=pad_w, p=1),
+            A.HorizontalFlip(p=0.5),
+            A.VerticalFlip(p=0.5),
+            A.Normalize(mean=mean, std=std, max_pixel_value=255.0),
             ToTensorV2()
         ], is_check_shapes=False)
     
     val_transforms = A.Compose([
+            # Validation usually uses padding to mult of 128 without cropping to retain full resolution
             A.PadIfNeeded(min_height=pad_h, min_width=pad_w, border_mode=cv2.BORDER_REFLECT, p=1),
-            A.Normalize(
-            mean = mean, std = std, max_pixel_value = 255.0
-            ),
+            A.Normalize(mean=mean, std=std, max_pixel_value=255.0),
             ToTensorV2()
         ], is_check_shapes=False)
     

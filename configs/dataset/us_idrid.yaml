@@ -1,0 +1,88 @@
+# Multi-Head Foundation Dataset Config
+name: Multi_Foundation_v1
+global_batch_size: 16 # Common batch size for joint training
+
+# Map dataset names to their class counts for the multi-head architecture
+num_classes:
+  US_Nerve: 2
+  IDRiD: 6
+
+# Shared defaults
+multi_label: False
+dry_run: False
+is_3d: False
+ignore_index: ~
+
+# Training Datasets
+train_dataset:
+  US_Nerve:
+    _target_: data.data.SEGDataset
+    dataset_name: US_Nerve
+    root_dir: ${data_dir}/US_Nerve_10/
+    split: train
+    # img_size: [420, 580]
+    train_im_size: [512, 640] # Padding target for US_Nerve
+    mean: [0.3899, 0.3899, 0.3899]
+    std: [0.2219, 0.2219, 0.2219]
+    cls_weights: [1, 1]
+    
+  
+  IDRiD:
+    _target_: data.data.SEGDataset
+    dataset_name: IDRiD
+    root_dir: ${data_dir}/IDRiD_1024/
+    split: train
+    # img_size: [2848, 4288]
+    train_im_size: [1024, 1024]
+    mean: [0.4546, 0.2242, 0.0673]
+    std: [0.3364, 0.1738, 0.0874]
+    cls_weights: [0.00995578, 0.9448299,  1.06201258, 9.19234983, 0.53680837, 5.12533219]
+
+
+# Validation Datasets
+val_dataset:
+  US_Nerve:
+    _target_: data.data.SEGDataset
+    dataset_name: US_Nerve
+    root_dir: ${data_dir}/US_Nerve_10/
+    split: val
+    # img_size: [420, 580]
+    train_im_size: [512, 640]
+    mean: [0.3899, 0.3899, 0.3899]
+    std: [0.2219, 0.2219, 0.2219]
+  
+  IDRiD:
+    _target_: data.data.SEGDataset
+    dataset_name: IDRiD
+    root_dir: ${data_dir}/IDRiD_1024/
+    split: val
+    # img_size: [2848, 4288]
+    train_im_size: [1024, 1024]
+    mean: [0.4546, 0.2242, 0.0673]
+    std: [0.3364, 0.1738, 0.0874]
+
+# Test Datasets
+test_dataset:
+  US_Nerve:
+    _target_: data.data.SEGDataset
+    dataset_name: US_Nerve
+    root_dir: ${data_dir}/US_Nerve_10/
+    split: test
+    train_im_size: [512, 640]
+    mean: [0.3899, 0.3899, 0.3899]
+    std: [0.2219, 0.2219, 0.2219]
+  
+  IDRiD:
+    _target_: data.data.SEGDataset
+    dataset_name: IDRiD
+    root_dir: ${data_dir}/IDRiD_1024/
+    split: test
+    # img_size: [2848, 4288]
+    train_im_size: [1024, 1024]
+    mean: [0.4546, 0.2242, 0.0673]
+    std: [0.3364, 0.1738, 0.0874]
+
+# Logging metadata (placeholders as metrics are now dataset-specific)
+class_names: ["BG", "Task_Specific"]
+mean_per_channel: [0.5, 0.5, 0.5]
+std_per_channel: [0.5, 0.5, 0.5]

@@ -1,5 +1,6 @@
 import pytorch_lightning as L
 import torch
+import ipdb
 import torch.nn as nn
 from PIL import Image
 
@@ -11,88 +12,163 @@ class ElitLightModel(L.LightningModule):
     def __init__(self, cfg):
         super().__init__()
         self.cfg = cfg
-        self.model = instantiate(cfg.network.instance)
-        self.loss = instantiate(cfg.loss.instance)
-        self.ignore_index = self.loss.ignore_index #If we want to ignore a class in the loss computation
-        self.train_metrics = instantiate(cfg.train_metrics)
-        self.val_metrics = instantiate(cfg.val_metrics)
-        self.test_metrics = instantiate(cfg.test_metrics)
+        self.model_cfg = cfg.model # Model specific config group
+        
+        self.model = instantiate(self.model_cfg.network.instance)
+        
+        # Determine if we are in multi-head mode
+        self.dataset_classes = getattr(self.model, 'dataset_classes', None)
+        self.is_multihead = self.dataset_classes is not None
+
+        if self.is_multihead:
+            # Create ModuleDicts for losses and metrics for each dataset
+            self.loss = nn.ModuleDict()
+            self.train_metrics = nn.ModuleDict()
+            self.val_metrics = nn.ModuleDict()
+            self.test_metrics = nn.ModuleDict()
+
+            for name, n_cls in self.dataset_classes.items():
+                cls_weights = None
+                try:
+                    # In us_idrid.yaml, weights are under train_dataset[name].cls_weights
+                    cls_weights = cfg.dataset.train_dataset[name].get('cls_weights', None)
+                except:
+                    pass
+                
+                # Instantiate components per head
+                self.loss[name] = instantiate(self.model_cfg.loss.instance, alpha=cls_weights, num_classes=n_cls)
+                self.train_metrics[name] = instantiate(self.model_cfg.train_metrics, num_classes=n_cls)
+                self.val_metrics[name] = instantiate(self.model_cfg.val_metrics, num_classes=n_cls)
+                self.test_metrics[name] = instantiate(self.model_cfg.test_metrics, num_classes=n_cls)
+        else:
+            # Single-dataset mode instantiation
+            num_classes = getattr(cfg.dataset, 'num_classes', 0)
+            cls_weights = getattr(cfg.dataset, 'cls_weights', None)
+            
+            self.loss = instantiate(self.model_cfg.loss.instance, alpha=cls_weights, num_classes=num_classes)
+            self.train_metrics = instantiate(self.model_cfg.train_metrics, num_classes=num_classes)
+            self.val_metrics = instantiate(self.model_cfg.val_metrics, num_classes=num_classes)
+            self.test_metrics = instantiate(self.model_cfg.test_metrics, num_classes=num_classes)
+
         self.val_steps = 0
         self.viz_image_count = 0
 
     def training_step(self, batch):
-        image,gt_mask = batch
-        image,gt_mask = image.float(), gt_mask.long()
+        if isinstance(batch, dict):
+            # MULTI-LOADER MODE (from CombinedLoader)
+            total_loss = 0
+            for dataset_name, d_batch in batch.items():
+                image, gt_mask, _ = d_batch
+                image, gt_mask = image.float(), gt_mask.long()
 
-        pred = self.model(image)
+                pred = self.model(image, dataset_name=dataset_name)
+                # Use dataset-specific loss
+                loss = self.loss[dataset_name](pred, gt_mask)
+                total_loss += loss
+                
+                # Log stats with dataset prefix
+                self.train_metrics[dataset_name].update(pred.detach(), gt_mask)
+                self.log(f"train/{dataset_name}/loss", loss, sync_dist=True)
+            
+            return total_loss
         
-        loss = self.loss(pred, gt_mask)
-        self.train_metrics.update(pred, gt_mask)
-        self.log("train/loss", loss, sync_dist=True, on_step=True, on_epoch=True)
-        mean_metric,class_metrics = self.train_metrics.compute()
+        # SINGLE LOADER MODE
+        if len(batch) == 3:
+            image, gt_mask, dataset_name = batch
+        else:
+            image, gt_mask = batch
+            dataset_name = None
+
+        image, gt_mask = image.float(), gt_mask.long()
+
+        if self.is_multihead:
+            pred = self.model(image, dataset_name=dataset_name)
+            metrics = self.train_metrics[dataset_name]
+            loss_func = self.loss[dataset_name]
+        else:
+            pred = self.model(image)
+            metrics = self.train_metrics
+            loss_func = self.loss
         
-        precisions = []
-        for metric_name,metric_value  in class_metrics.items():
-            if("precision" in metric_name):
-                precisions.append(metric_value)
+        loss = loss_func(pred, gt_mask)
+        metrics.update(pred.detach(), gt_mask)
         
-        mean_metric["m_prec"] = sum(precisions)/len(precisions)
-        
-        for metric_name, metric_value in mean_metric.items():
-            self.log(
-                f"train/{metric_name}",
-                metric_value,
-                sync_dist=True,
-                on_step=True,
-                on_epoch=False,
-            )
-        self.train_metrics.reset()
-        self.viz_image_count = 0
+        prefix = f"train/{dataset_name}/" if dataset_name else "train/"
+        self.log(f"{prefix}loss", loss, sync_dist=True, on_step=True, on_epoch=True)
         return loss
 
+    def on_train_epoch_end(self):
+        """Compute and reset training metrics at the end of the epoch."""
+        if self.is_multihead:
+            for name, metrics in self.train_metrics.items():
+                mean_metrics, _ = metrics.compute()
+                for m_name, m_val in mean_metrics.items():
+                    self.log(f"train/{name}/{m_name}", m_val, sync_dist=True)
+                metrics.reset()
+        else:
+            mean_metrics, _ = self.train_metrics.compute()
+            for m_name, m_val in mean_metrics.items():
+                self.log(f"train/{m_name}", m_val, sync_dist=True)
+            self.train_metrics.reset()
+
     @torch.no_grad()
-    def validation_step(self, batch:list):
-        image,gt_mask = batch
-        #Please apply appropriate type casting in your respective loss functions if needed donot change here.
-        
-        image,gt_mask = image.float(), gt_mask.float() 
-        pred = self.model(image)    
-    
-        # if(self.val_steps % 50 == 0  and self.viz_image_count < 5):
-        #     visualize(self.cfg,image[0],gt_mask[0],pred[0].cpu().numpy(),self.viz_image_count,self.val_steps)
+    def validation_step(self, batch: list):
+        if isinstance(batch, dict):
+            # MULTI-LOADER MODE
+            total_loss = 0
+            for dataset_name, d_batch in batch.items():
+                image, gt_mask, _ = d_batch
+                image, gt_mask = image.float(), gt_mask.float()
+   
+                pred = self.model(image, dataset_name=dataset_name)
+                # Use dataset-specific loss
+                loss = self.loss[dataset_name](pred, gt_mask)
+                total_loss += loss
+                
+                metrics = self.val_metrics[dataset_name]
+                metrics.update(pred.detach(), gt_mask.detach())
+                
+                prefix = f"val/{dataset_name}/"
+                self.log(f"{prefix}loss", loss, sync_dist=True, on_step=True, on_epoch=True)
+                
+                # Compute and log metrics
+                mean_metrics, _ = metrics.compute()
+                for metric_name, m_val in mean_metrics.items():
+                    self.log(f"{prefix}{metric_name}", m_val, sync_dist=True, on_step=True)
+                metrics.reset()
+            
+            self.log("val/loss", total_loss / len(batch), sync_dist=True, on_epoch=True)
+            return
 
-        
-        # import ipdb
-        # print("Device:",pred.device)
-        # print("Data types:",gt_mask.dtype,pred.dtype)
-        # ipdb.set_trace()
-        
-        loss = self.loss(pred, gt_mask)
-        # print("VALIDATION")
-        # import ipdb
-        # ipdb.set_trace()
-        self.val_metrics.update(pred.detach(), gt_mask.detach()) #Moving the validation metric computation to the CPU
-        
-        #Because it is running OOM at the end of validation epoch, we will need to calculate the metrics
-        #at every step and then reset them immediately.
-        mean_metrics, class_metrics = self.val_metrics.compute()
-        
-        precisions = []
-        for metric_name,metric_value  in class_metrics.items():
-            if("precision" in metric_name):
-                precisions.append(metric_value)
-        
-        mean_metrics["m_prec"] = sum(precisions)/len(precisions)
+        # SINGLE LOADER MODE
+        if len(batch) == 3:
+            image, gt_mask, dataset_name = batch
+        else:
+            image, gt_mask = batch
+            dataset_name = None
 
+        image, gt_mask = image.float(), gt_mask.float()
+        
+        if self.is_multihead:
+            pred = self.model(image, dataset_name=dataset_name)
+            metrics = self.val_metrics[dataset_name]
+            loss_func = self.loss[dataset_name]
+        else:
+            pred = self.model(image)
+            metrics = self.val_metrics
+            loss_func = self.loss
+        
+        loss = loss_func(pred, gt_mask)
+        metrics.update(pred.detach(), gt_mask.detach())
+        
+        mean_metrics, class_metrics = metrics.compute()
+        
+        prefix = f"val/{dataset_name}/" if dataset_name else "val/"
         for metric_name, metric_value in mean_metrics.items():
-            self.log(
-                f"val/{metric_name}",
-                metric_value,
-                sync_dist=True,
-                on_step=True
-            )
-        self.val_metrics.reset()
-        self.log("val/loss", loss, sync_dist=True, on_step=True, on_epoch=True)
+            self.log(f"{prefix}{metric_name}", metric_value, sync_dist=True, on_step=True)
+        
+        metrics.reset()
+        self.log(f"{prefix}loss", loss, sync_dist=True, on_step=True, on_epoch=True)
         self.val_steps += 1
 
     def on_validation_epoch_end(self):
@@ -152,7 +228,7 @@ class ElitLightModel(L.LightningModule):
 
     def configure_optimizers(self):
         #So Here the weight decay is not applied to LayerNorm and Biases.
-        if self.cfg.optimizer.exclude_bias_from_wd:
+        if self.model_cfg.optimizer.exclude_bias_from_wd:
             parameters_names_wd = get_parameter_names(self.model, [nn.LayerNorm])
             parameters_names_wd = [
                 name for name in parameters_names_wd if "bias" not in name
@@ -164,7 +240,7 @@ class ElitLightModel(L.LightningModule):
                         for n, p in self.model.named_parameters()
                         if n in parameters_names_wd
                     ],
-                    "weight_decay": self.cfg.optimizer.optim.weight_decay,
+                    "weight_decay": self.model_cfg.optimizer.optim.weight_decay,
                 },
                 {
                     "params": [
@@ -176,11 +252,11 @@ class ElitLightModel(L.LightningModule):
                 },
             ]
             optimizer = instantiate(
-                self.cfg.optimizer.optim, optimizer_grouped_parameters
+                self.model_cfg.optimizer.optim, optimizer_grouped_parameters
             )
         else:
-            optimizer = instantiate(self.cfg.optimizer.optim, self.model.parameters())
-        scheduler = instantiate(self.cfg.lr_scheduler)(optimizer)
+            optimizer = instantiate(self.model_cfg.optimizer.optim, self.model.parameters())
+        scheduler = instantiate(self.model_cfg.lr_scheduler)(optimizer)
         return [optimizer], [{"scheduler": scheduler, "monitor":"val/loss", 
                             "frequency": self.trainer.check_val_every_n_epoch}]
 

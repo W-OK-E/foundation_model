@@ -44,11 +44,6 @@ class SegmentationMetrics(Metric):
                 ignore_index=ignore_index,
                 average='macro'
             ),
-            'maupr': MulticlassAveragePrecision(
-                num_classes=num_classes,
-                ignore_index=ignore_index,
-                average='macro'
-            ),
             
             # Per-class IoU
             'per_class_iou': MulticlassJaccardIndex(
@@ -93,6 +88,8 @@ class SegmentationMetrics(Metric):
             pred: B x C x H x W (predicted logits)
             gt: B x H x W (ground truth labels) or B x H x W x C (multi-label)
         """
+        pred = pred.detach()
+        gt = gt.detach()
 
         if not self.is_3d:
             assert len(pred.shape) == 4, "pred must be B x C x H x W"    
@@ -125,7 +122,6 @@ class SegmentationMetrics(Metric):
         mean_output = {
             "miou": (results['miou'] * 100).item(),
             "mf": (results['mf'] * 100).item(),
-            "maupr": (results['maupr'] * 100).item()
         }
         class_output = {}
         # Add per-class metrics

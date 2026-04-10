@@ -1,113 +1,230 @@
+import torch
 import torch.nn as nn
+from typing import List, Dict
 
-from typing import List
-from .blocksv2 import ConvBlock,DoubleAttBlock,UpConvBlock
+from .blocks import ConvBlock, DoubleAttBlock, UpConvBlock
+
+
+# ─────────────────────────────────────────────────────────────
+#  BACKBONE  (shared across all datasets)
+# ─────────────────────────────────────────────────────────────
 class ELiTNetEncoder(nn.Module):
+    """
+    Shared backbone. Learns dataset-agnostic spatial features.
+    in_c        : number of input channels (e.g. 3 for RGB)
+    latent_c    : channel width of the bottleneck (replaces the old 'num_classes' misuse)
+    layers      : list of channel widths per encoder stage
+    """
     def __init__(
         self,
         in_c: int,
-        k_sz: int,
+        latent_c: int,
         layers: List[int],
         shortcut: bool = True,
-        pool='pool',
-        residual=True,
-        causal=True,
-        conv_mode='MKConv2D'
+        pool: str = 'pool',
+        residual: bool = True,
+        causal: bool = True,
+        conv_mode: str = 'MKConv2D'
     ):
         super().__init__()
-        self.first = ConvBlock(in_c=in_c, out_c=layers[0], k_sz=k_sz,
-                               shortcut=shortcut, pool=False, conv_mode=conv_mode)
-        
-        # in_out_widths = list(zip(layers, layers[1:]))
-        # create drop paths probabilities (one for each stage)
-        # drop_probs = [x.item() for x in torch.linspace(0, drop_p, sum(depths))]
-        
+        self.first = ConvBlock(
+            in_c=in_c, out_c=layers[0], k_sz=3,
+            shortcut=shortcut, pool=False, conv_mode=conv_mode
+        )
+
         self.down_path = nn.ModuleList()
         for i in range(len(layers) - 1):
-            if i <= 7:
-                block = DoubleAttBlock(in_c=layers[i], out_c=layers[i + 1], k_sz=k_sz,
-                                shortcut=shortcut, pool=pool, attention=True, residual=residual, causal=causal, conv_mode=conv_mode)
-            else:
-                block = DoubleAttBlock(in_c=layers[i], out_c=layers[i + 1], k_sz=k_sz,
-                                shortcut=shortcut, pool=pool, attention=False, residual=residual, causal=causal, conv_mode=conv_mode)
+            attention = (i <= 7)
+            block = DoubleAttBlock(
+                in_c=layers[i], out_c=layers[i + 1], k_sz=3,
+                shortcut=shortcut, pool=pool,
+                attention=attention,
+                residual=residual, causal=causal, conv_mode=conv_mode
+            )
             self.down_path.append(block)
-        
-    def forward(self, x):
-        x = self.first(x)
-        down_activations = []
-        for i, down in enumerate(self.down_path):
-            down_activations.append(x)
-            x = down(x)
-        down_activations.reverse()
-        return x#, down_activations
 
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        x = self.first(x)
+        for down in self.down_path:
+            x = down(x)
+        return x
+
+
+# ─────────────────────────────────────────────────────────────
+#  HEAD  (one per dataset)
+# ─────────────────────────────────────────────────────────────
 class ELiTNetDecoder(nn.Module):
+    """
+    Shared decoder path. Learns dataset-agnostic spatial reconstruction.
+    layers      : SAME list used by the encoder (reversed internally)
+    """
     def __init__(
         self,
-        n_classes: int,
         k_sz: int,
-        #latent_features: int,
         layers: List[int],
-        up_mode='up_conv',
+        up_mode: str = 'up_conv',
         conv_bridge: bool = True,
         shortcut: bool = True,
         skip_conn: bool = True,
-        residual=True,
-        causal=True,
-        conv_mode='MKConv2D'
+        residual: bool = True,
+        causal: bool = True,
+        conv_mode: str = 'MKConv2D'
     ):
         super().__init__()
-        
+
         self.up_path = nn.ModuleList()
-        #print(layers)
         reversed_layers = list(reversed(layers))
         for i in range(len(layers) - 1):
-            block = UpConvBlock(in_c=reversed_layers[i], out_c=reversed_layers[i + 1], k_sz=k_sz,
-                                up_mode=up_mode, conv_bridge=conv_bridge, shortcut=shortcut, skip_conn=skip_conn, 
-                                residual=residual, causal=causal, conv_mode=conv_mode)
+            block = UpConvBlock(
+                in_c=reversed_layers[i], out_c=reversed_layers[i + 1], k_sz=k_sz,
+                up_mode=up_mode, conv_bridge=conv_bridge,
+                shortcut=shortcut, skip_conn=skip_conn,
+                residual=residual, causal=causal, conv_mode=conv_mode
+            )
             self.up_path.append(block)
-            
-        self.final = nn.Conv2d(layers[0], n_classes, kernel_size=1)
-        
 
-    def forward(self, x):#, down_activations):
-        for i, up in enumerate(self.up_path):
-            x = up(x)#, down_activations[i])
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        for up in self.up_path:
+            x = up(x)
+        return x
+
+
+class ELiTNetHead(nn.Module):
+    """
+    Dataset-specific segmentation head (final layer).
+    n_classes   : number of output classes for this dataset
+    in_c        : input channels (usually layers[0])
+    """
+    def __init__(self, in_c: int, n_classes: int):
+        super().__init__()
+        self.final = nn.Conv2d(in_c, n_classes, kernel_size=1)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.final(x)
 
 
-        
+# ─────────────────────────────────────────────────────────────
+#  MULTI-HEAD ElitNet
+# ─────────────────────────────────────────────────────────────
 class ElitNet(nn.Module):
-    def __init__(self, in_channels, num_classes, layers, kernel_sz=3, up_mode='pixelshuffle', pool='pool', 
-                 conv_bridge=True, shortcut=True, skip_conn=True, residual=True, causal=True, conv_mode='MKConv2D'):
-        """
-        ELiTNet 2D Architecture
-        
-        Args:
-            in_c: Number of input channels
-            n_classes: Number of output classes
-            layers: List of channel dimensions for each layer
-            k_sz: Kernel size
-            up_mode: Upsampling mode ('pixelshuffle', 'up_conv', 'transp_conv')
-            pool: Pooling mode ('pool', 'conv', False)
-            conv_bridge: Whether to use convolutional bridge in decoder
-            shortcut: Whether to use shortcut connections
-            skip_conn: Whether to use skip connections
-            residual: Whether to use residual blocks
-            causal: Whether to use causal convolutions
-            conv_mode: Type of convolution to use ('Conv2d', 'MKConv2D', 'DecomConv2D', 'SeparableConv2d')
-        """
-        super(ElitNet, self).__init__()
-        print("="*70)
-        print("Initializing ")
-        #self.n_classes = n_classes
-        self.encoder = ELiTNetEncoder(in_channels, num_classes, layers, pool=pool, residual=residual, causal=causal, conv_mode=conv_mode)
-        #self.latent = nn.Conv1d(widths[-1],latent_features,1)
-        self.decoder = ELiTNetDecoder(num_classes, kernel_sz, layers, up_mode, conv_bridge, shortcut, skip_conn, residual, causal, conv_mode=conv_mode)
+    """
+    Foundation segmentation model with a shared backbone and
+    dataset-specific decoder heads.
 
-    def forward(self, x):
-        #x, down_activations = self.encoder(x)
-        x= self.encoder(x)
-        #print(x.size())
-        x = self.decoder(x)#, down_activations)
-        return x
+    Args:
+        in_channels  : input channels (must be the same for all datasets, e.g. 3)
+        dataset_classes : dict mapping dataset_name -> num_classes
+                          e.g. {'US_Nerve': 2, 'IDRiD': 6}
+        layers       : channel-width schedule shared by encoder and all decoders
+        kernel_sz    : convolution kernel size
+        up_mode      : upsampling strategy ('pixelshuffle' | 'up_conv' | 'transp_conv')
+        pool         : downsampling strategy ('pool' | 'conv' | False)
+        conv_bridge  : use conv bridge in decoder skip connections
+        shortcut     : residual shortcuts in blocks
+        skip_conn    : skip connections in decoder
+        residual     : residual blocks in trunk
+        causal       : causal convolutions in trunk
+        conv_mode    : conv variant ('Conv2d' | 'MKConv2D' | 'DecomConv2D' | 'SeparableConv2d')
+
+    Forward:
+        x            : (B, C, H, W) input tensor
+        dataset_name : str key matching one of dataset_classes
+
+    Returns:
+        logits       : (B, num_classes_for_dataset, H, W)
+    """
+
+    def __init__(
+        self,
+        in_channels: int,
+        dataset_classes: Dict[str, int],   # {'US_Nerve': 2, 'IDRiD': 6}
+        layers: List[int],
+        kernel_sz: int = 3,
+        up_mode: str = 'pixelshuffle',
+        pool: str = 'pool',
+        conv_bridge: bool = True,
+        shortcut: bool = True,
+        skip_conn: bool = True,
+        residual: bool = True,
+        causal: bool = True,
+        conv_mode: str = 'MKConv2D'
+    ):
+        super().__init__()
+
+        print("=" * 70)
+        print(f"Initializing ElitNet (multi-head)")
+        print(f"  Datasets : {list(dataset_classes.keys())}")
+        print(f"  Classes  : {dataset_classes}")
+        print(f"  Layers   : {layers}")
+        print("=" * 70)
+
+        # ── Shared backbone ──────────────────────────────────────────────
+        # latent_c is not used directly in the encoder constructor call,
+        # but layers[-1] is the bottleneck channel width.
+        self.encoder = ELiTNetEncoder(
+            in_c=in_channels,
+            latent_c=layers[-1],      # bottleneck width
+            layers=layers,
+            pool=pool,
+            residual=residual,
+            causal=causal,
+            conv_mode=conv_mode
+        )
+
+        # ── Shared decoder ────────────────────────────────────────────────
+        self.decoder = ELiTNetDecoder(
+            k_sz=kernel_sz,
+            layers=layers,
+            up_mode=up_mode,
+            conv_bridge=conv_bridge,
+            shortcut=shortcut,
+            skip_conn=skip_conn,
+            residual=residual,
+            causal=causal,
+            conv_mode=conv_mode
+        )
+
+        # ── Per-dataset final heads ───────────────────────────────────────
+        self.heads = nn.ModuleDict({
+            dataset_name: ELiTNetHead(
+                in_c=layers[0],
+                n_classes=n_classes
+            )
+            for dataset_name, n_classes in dataset_classes.items()
+        })
+
+        self.dataset_classes = dataset_classes
+
+    # ── Convenience ──────────────────────────────────────────────────────
+    def get_head(self, dataset_name: str) -> ELiTNetHead:
+        if dataset_name not in self.heads:
+            raise KeyError(
+                f"Unknown dataset '{dataset_name}'. "
+                f"Available: {list(self.heads.keys())}"
+            )
+        return self.heads[dataset_name]
+
+    def encoder_parameters(self):
+        """Useful for freezing / different LR schedules."""
+        return self.encoder.parameters()
+
+    def decoder_parameters(self):
+        """Shared decoder parameters."""
+        return self.decoder.parameters()
+
+    def head_parameters(self, dataset_name: str):
+        """Dataset-specific final layer parameters."""
+        return self.get_head(dataset_name).parameters()
+
+    # ── Forward ──────────────────────────────────────────────────────────
+    def forward(self, x: torch.Tensor, dataset_name: str) -> torch.Tensor:
+        """
+        Args:
+            x            : input image tensor (B, C, H, W)
+            dataset_name : which head to use, e.g. 'US_Nerve' or 'IDRiD'
+        Returns:
+            segmentation logits (B, num_classes, H, W)
+        """
+        features = self.encoder(x)
+        dec_features = self.decoder(features)
+        return self.get_head(dataset_name)(dec_features)
