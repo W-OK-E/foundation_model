@@ -2,7 +2,7 @@ instance:
   _target_: models.network.ElitNet.ElitNet
   in_channels : ${dataset.num_channels}
   num_classes : ${dataset.num_classes}
-  layers : [4,8,16,24]
+  layers : [4,8,16]
   kernel_sz : 3 
   up_mode : 'pixelshuffle'   #Options: 'transpose','pixelshuffle','up_conv'
   pool: 'pool'    #Options: 'pool','strided_conv','avg_pool','max_pool'

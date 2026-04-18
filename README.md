@@ -1,9 +1,6 @@
 # Foundation Model for Medical Imaging
 
-This repository contains code and configurations for training a foundation model across multiple medical imaging datasets. Currently, it is being trained on:
-
-- **IDRID** (Diabetic Retinopathy)
-- **US-Nerve Segmentation** (Ultrasound Nerve Images)
+This project is at aimed at building, developing and training a foundation model across multiple medical imaging datasets.
 
 The goal is to build a multi-modal,multi-task and maybe a multi-resolution model using a shared architecture (EliteNet), with considerations for varying input sizes and dataset characteristics.
 
@@ -47,23 +44,9 @@ IDRiD_58.png
 ```
 ## Getting Started with Training
 
-Follow these steps to get up and running with the project.
+The virtual environment has been created in the folder /mnt/data/omkumar/foundation_model/.venv
+so whatever needs to be run must be run using uv and inside the directory - /mnt/data/omkumar/foundation_model/foundation_phase1
 
-### 1. Clone the Repository
-
-```bash
-git clone https://github.com/your-username/ELiTNet.git
-cd ELiTNet
-```
-
-### 2. Install UV
-
-Install uv via curl:
-```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
-```
-
-This will install uv and set up the environment management system.
 
 ### 3. Configure Weights & Biases (wandb)
 
@@ -80,35 +63,10 @@ logger:
   project: your-project-name
 ```
 
-### 4. Login to WandB
+## Absolute MUST: 
+`/mnt/data/omkumar/foundation_model/foundation_phase1/run.sh` is the primary file that needs to be run to train the model. 
+Command Breakdown:
+`uv run train.py dataset='cbis' model.name='ELitNet' dataset.multi_label=False`
 
-Run the training script using uv, which will prompt you to log in to wandb:
-```bash
-uv run train.py
-```
-Select Use an existing account when prompted.
-
-Paste your WandB API key (available in your WandB project dashboard).
-
-Once done, your training runs will be tracked in WandB automatically.
-
-## Metrics upon completion of training
-
-Metrics will be calculated automatically once training finishes options for the same are as follows:
-
-To disable metric calculation
-```bash
-uv run train.py report.enabled=false
-```
-To change split: 
-```bash
-uv run train.py report.split=val
-```
-To choose metrics(by default all are being calculated)
-```bash
-uv run train.py report.metrics=[miou,mean_dice,per_class_iou]
-```
-To change output subdir: 
-```bash
-uv run train.py report.output_subdir=metrics
-```
+The dataset parameter value will depend on what the user wants to train on. The options are the names of the config 
+files in the `/mnt/data/omkumar/foundation_model/foundation_phase1/configs/dataset/` folder. 

@@ -1,1 +1,1 @@
-tmux new-session -s brats_3d 'export CUDA_VISIBLE_DEVICES="0,1"; exec bash'
+tmux new-session -s cholec_8k_residual 'export CUDA_VISIBLE_DEVICES="0"; exec bash'

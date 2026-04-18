@@ -21,6 +21,9 @@ for fname in tqdm(os.listdir(mask_dir)):
     total_pixels += mask.size
     for c in range(n_classes):
         counts[c] += np.sum(mask == c)
+        # unique values in cbis was 0 and 255
+        # counts[0] += np.sum(mask == 0)
+        # counts[1] += np.sum(mask == 255)
 
 freq = counts / total_pixels
 median_freq = np.median(freq)

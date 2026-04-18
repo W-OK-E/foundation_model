@@ -1,47 +1,51 @@
-name: US_Nerve
-global_batch_size: 16
-img_size: [420, 580]
-train_im_size: [512, 640]
+name: Cbis
+global_batch_size: 1
+img_size: [4203, 2102]
+train_im_size: [4203, 2102]
 num_channels: 3
 num_classes: 2
-is_3d: false
 ignore_index: ~
-class_names: ["BG","Nerves"]
-mean_per_channel: [0.38990931, 0.38990931, 0.38990931]
-std_per_channel: [0.22191754, 0.22191754, 0.22191754]
+class_names: ["Bg","Tumor_Mass"]
+mean_per_channel: [0.27603771]
+std_per_channel: [0.28214383]
 multi_label: False
 dry_run: False
-cls_weights: [1, 1]
+cls_weights:  [0.51187115, 21.55946295]
+is_3d: False
+extract_patches: [1024,1024]
 
 train_dataset:
   _partial_: false
   _target_: data.data.SEGDataset
-  root_dir: ${data_dir}/US_Nerve/
+  root_dir: ${data_dir}/Cbis/
   split: train
   img_size : ${..img_size}
   mean: ${..mean_per_channel}
   std: ${..std_per_channel}
   multi_label: ${..multi_label}
   dry_run: ${..dry_run}
+  extract_patches: ${..extract_patches}
 
 val_dataset:
   _partial_: false
   _target_: data.data.SEGDataset
-  root_dir: ${data_dir}/US_Nerve/
+  root_dir: ${data_dir}/Cbis/
   split: val
   img_size : ${..img_size}
   mean: ${..mean_per_channel}
   std: ${..std_per_channel}
   multi_label: ${..multi_label}
   dry_run: ${..dry_run}
+  extract_patches: ${..extract_patches}
 
 test_dataset:
   _partial_: false
   _target_: data.data.SEGDataset
-  root_dir: ${data_dir}/US_Nerve/
+  root_dir: ${data_dir}/Cbis/
   split: test
   img_size : ${..img_size}
   mean: ${..mean_per_channel}
   std: ${..std_per_channel}
   multi_label: ${..multi_label}
   dry_run: ${..dry_run}
+  extract_patches: ${..extract_patches}

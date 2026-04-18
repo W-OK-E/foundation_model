@@ -4,6 +4,7 @@ img_size: [128, 128]
 train_im_size: [128, 128]
 num_channels: 3
 num_classes: 6
+is_3d: false
 ignore_index: ~
 class_names: ["BG","EX", "HE", "MA", "OD", "SE"]
 mean_per_channel: [0.45458799, 0.22424427, 0.06732585]

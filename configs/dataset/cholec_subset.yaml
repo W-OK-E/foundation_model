@@ -24,7 +24,7 @@ cls_weights:  [
 train_dataset:
   _partial_: false
   _target_: data.data.SEGDataset
-  root_dir: ${data_dir}/cholec_1fps/
+  root_dir: ${data_dir}/cholec_subset/
   split: train
   img_size : ${..img_size}
   mean: ${..mean_per_channel}
@@ -35,7 +35,7 @@ train_dataset:
 val_dataset:
   _partial_: false
   _target_: data.data.SEGDataset
-  root_dir: ${data_dir}/cholec_1fps/
+  root_dir: ${data_dir}/cholec_subset/
   split: val
   img_size : ${..img_size}
   mean: ${..mean_per_channel}
@@ -46,7 +46,7 @@ val_dataset:
 test_dataset:
   _partial_: false
   _target_: data.data.SEGDataset
-  root_dir: ${data_dir}/cholec_1fps/
+  root_dir: ${data_dir}/cholec_subset/
   split: test
   img_size : ${..img_size}
   mean: ${..mean_per_channel}

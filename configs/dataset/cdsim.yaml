@@ -1,15 +1,11 @@
-name: Cholec
-global_batch_size: 32
+name: CDSIM
+global_batch_size: 1
 img_size: [480, 854]
 train_im_size: [512, 896]
 num_channels: 3
-num_classes: 13
-is_3d: false
+num_classes: 1
 ignore_index: ~
-class_names: ["Black Background","Abdominal Wall","Liver",
-            "Gastrointestinal Tract","Fat","Grasper","Connective Tissue",
-            "Blood","Cystic Duct","L-hook Electrocautery",
-            "Gallbladder","Hepatic Vein","Misc1"]
+class_names: ["Calcification"]
 mean_per_channel: [0.3782772, 0.23324355, 0.22724209]
 std_per_channel: [0.27367861, 0.23258302, 0.21778946]
 multi_label: False

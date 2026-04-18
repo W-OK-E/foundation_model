@@ -6,8 +6,8 @@ num_channels: 2
 num_classes: 4
 ignore_index: ~
 class_names: ['BG','WT','EN','ET']
-mean_per_channel: [0.29748659, 0.57242417]
-std_per_channel: [0.80034737, 1.72574752]
+mean_per_channel: [476.9169, 281.4515]
+std_per_channel: [1058.0099, 1036.7290]
 multi_label: False
 dry_run: False
 cls_weights:  [0.00995578 ,0.9448299, 1.06201258, 9.19234983]

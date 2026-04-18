@@ -27,7 +27,14 @@ class ElitLightModel(L.LightningModule):
         pred = self.model(image)
         
         loss = self.loss(pred, gt_mask)
-        self.train_metrics.update(pred, gt_mask)
+        
+        # If deep supervision is enabled, pred is a list. Use highest resolution for metrics.
+        if isinstance(pred, (list, tuple)):
+            pred_for_metrics = pred[0]
+        else:
+            pred_for_metrics = pred
+    
+        self.train_metrics.update(pred_for_metrics, gt_mask)
         self.log("train/loss", loss, sync_dist=True, on_step=True, on_epoch=True)
         mean_metric,class_metrics = self.train_metrics.compute()
         
@@ -52,26 +59,24 @@ class ElitLightModel(L.LightningModule):
 
     @torch.no_grad()
     def validation_step(self, batch:list):
+        print("Got the batch for validation")
         image,gt_mask = batch
         #Please apply appropriate type casting in your respective loss functions if needed donot change here.
         
         image,gt_mask = image.float(), gt_mask.float() 
         pred = self.model(image)    
     
-        # if(self.val_steps % 50 == 0  and self.viz_image_count < 5):
-        #     visualize(self.cfg,image[0],gt_mask[0],pred[0].cpu().numpy(),self.viz_image_count,self.val_steps)
+        # If deep supervision is enabled, pred is a list. Use highest resolution for metrics.
+        if isinstance(pred, (list, tuple)):
+            pred_for_metrics = pred[0]
+        else:
+            pred_for_metrics = pred
 
-        
-        # import ipdb
-        # print("Device:",pred.device)
-        # print("Data types:",gt_mask.dtype,pred.dtype)
-        # ipdb.set_trace()
-        
         loss = self.loss(pred, gt_mask)
         # print("VALIDATION")
         # import ipdb
         # ipdb.set_trace()
-        self.val_metrics.update(pred.detach(), gt_mask.detach()) #Moving the validation metric computation to the CPU
+        self.val_metrics.update(pred_for_metrics.detach(), gt_mask.detach()) #Moving the validation metric computation to the CPU
         
         #Because it is running OOM at the end of validation epoch, we will need to calculate the metrics
         #at every step and then reset them immediately.
@@ -121,7 +126,14 @@ class ElitLightModel(L.LightningModule):
         image,gt_mask = batch
         image,gt_mask = image.float(), gt_mask.long()
         pred = self.model(image)
-        self.test_metrics.update(pred.detach(), gt_mask.detach()) #Oh so that is why they have implemented a custom Segmentation loss, so that 
+        
+        # If deep supervision is enabled, pred is a list. Use highest resolution for metrics.
+        if isinstance(pred, (list, tuple)):
+            pred_for_metrics = pred[0]
+        else:
+            pred_for_metrics = pred
+
+        self.test_metrics.update(pred_for_metrics.detach(), gt_mask.detach()) #Oh so that is why they have implemented a custom Segmentation loss, so that 
         #at every test step, they can update the confusion matrix.
         mean_metrics, class_metric = self.test_metrics.compute() #And after accumulating the test metrics at every step, they compute the final metrics here.
         for metric_name, metric_value in mean_metrics.items():

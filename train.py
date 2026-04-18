@@ -165,7 +165,9 @@ def init_datamodule(cfg):
 def hydra_boilerplate(cfg):
     dict_config = OmegaConf.to_container(cfg, resolve=True)
     callbacks = callback_init(cfg)
+    print("Initializing Datamodule")
     datamodule = init_datamodule(cfg)
+    print("Initialized")
     if(cfg.mode != "test"):
         project_init(cfg)
     wandb_id = wandb_init(cfg)
@@ -437,7 +439,7 @@ def _compute_segmentation_report(model, datamodule, report_cfg,cfg):
                     if(idx >= 10):
                         print("Generated 10 visualizations, breaking now...")
                         import ipdb
-                        ipdb.set_trace()
+                        # ipdb.set_trace()
                     preds_array = pred.cpu().numpy()
                     gt_array = target.cpu().numpy()
                     inp_im = images_vis[idx]
@@ -518,6 +520,7 @@ def main(cfg):
         if cfg.dry_run:
             pass
         if cfg.mode == "train":
+            print("We are inside train method")
             device = model.device
             trainer.fit(model, datamodule=datamodule, ckpt_path=ckpt_path)
             # After successful training, generate visualizations for viz split

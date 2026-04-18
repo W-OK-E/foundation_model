@@ -1,7 +1,6 @@
 import os
 import argparse
 
-from pkg_resources import require
 import numpy as np
 from PIL import Image
 

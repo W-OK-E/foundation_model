@@ -38,7 +38,7 @@ class ELiTNetEncoder3d(nn.Module):
             down_activations.append(x)
             x = down(x)
         down_activations.reverse()
-        return x
+        return x, down_activations
 
 class ELiTNetDecoder3d(nn.Module):
     def __init__(
@@ -65,11 +65,11 @@ class ELiTNetDecoder3d(nn.Module):
             self.up_path.append(block)
             
         self.final = nn.Conv3d(layers[0], n_classes, kernel_size=1)
-        
 
-    def forward(self, x):
+    def forward(self, x, down_activations):
         for i, up in enumerate(self.up_path):
-            x = up(x)
+            skip = down_activations[i] if i < len(down_activations) else None
+            x = up(x, skip)
         return self.final(x)
 
 
@@ -102,7 +102,15 @@ class ElitNet3d(nn.Module):
         self.encoder = ELiTNetEncoder3d(in_channels, kernel_sz, layers, pool=pool, residual=residual, causal=causal, conv_mode=conv_mode)
         self.decoder = ELiTNetDecoder3d(num_classes, kernel_sz, layers, up_mode, conv_bridge, shortcut, skip_conn, residual, causal, conv_mode=conv_mode)
 
+        # Weight initialisation (matches reference ELiTNet3D)
+        for m in self.modules():
+            if isinstance(m, nn.Conv3d):
+                nn.init.kaiming_normal_(m.weight, mode='fan_out', nonlinearity='relu')
+            elif isinstance(m, (nn.BatchNorm3d, nn.GroupNorm)):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
+
     def forward(self, x):
-        x = self.encoder(x)
-        x = self.decoder(x)
+        x, down_activations = self.encoder(x)
+        x = self.decoder(x, down_activations)
         return x

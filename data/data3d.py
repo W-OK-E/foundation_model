@@ -6,6 +6,13 @@ import numpy as np
 from torch.utils.data import Dataset
 from typing import Optional, Tuple, Callable
 
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+try:
+    from transforms import get_transforms_3d
+except ImportError:
+    from .transforms import get_transforms_3d
+
 
 def read_split_3d(json_file: str, split: str = "train"):
     """Read split information from JSON file."""
@@ -58,7 +65,7 @@ class Dataset3D(Dataset):
         self.target_height = target_height
         self.target_width = target_width
         self.extraction_mode = extraction_mode
-        self.transform = transform
+        self.transform = get_transforms_3d(split)
         
         # Read split information from JSON file
         split_json = os.path.join(root_dir, 'split.json')
@@ -73,12 +80,14 @@ class Dataset3D(Dataset):
         
         # Handle normalization
         if mean is None:
+            print("Mean is None")
             mean = (0.0, 0.0, 0.0)
         if std is None:
+            print("Std is None")
             std = (1.0, 1.0, 1.0)
         
-        self.mean = np.array(mean, dtype=np.float32).reshape(-1, 1, 1, 1)
-        self.std = np.array(std, dtype=np.float32).reshape(-1, 1, 1, 1)
+        self.mean = np.array(mean, dtype=np.float32)
+        self.std = np.array(std, dtype=np.float32)
 
         print("="*70)
         print("3D Dataset initialized")
@@ -111,17 +120,22 @@ class Dataset3D(Dataset):
             if mask.ndim == 3:
                 mask = np.expand_dims(mask, axis=0)  # D x H x W --> 1 x D x H x W
             image, mask = self._extract_volume(image, mask)
-        
+
+
         # Apply normalization
-        image = (image - self.mean) / (self.std + 1e-7)
+        image = (image - self.mean[:,None,None,None]) / (self.std[:,None,None,None] + 1e-7)
         
         # Convert back to tensors
         image = torch.from_numpy(image).float()
         mask = torch.from_numpy(mask).long()
+        if(mask.ndim == 3):
+            mask = mask.unsqueeze(0) #Adding channel dimension just for the transformation
         
         # Apply transforms if provided
         if self.transform is not None:
-            image, mask = self.transform(image, mask)
+            data = self.transform({"image":image, "mask":mask})
+            image = data["image"]
+            mask = data["mask"]
         
         if(mask.ndim == 4):
             mask = mask.squeeze(0)  # 1 x D x H x W --> D x H x W
@@ -197,18 +211,22 @@ class Dataset3D(Dataset):
 if __name__ == "__main__":
     # Create dataset with full volumes from training split
     dataset_train = Dataset3D(
-        root_dir='/home/asavari/foundation_model/datasets/cholec_8k_3d',
+        root_dir='/mnt/data/omkumar/foundation_model/foundation_phase1/datasets/Brats_3d_128',
         split='train',
+        mean=[476.9169, 281.4515],
+        std=[1058.0099, 1036.7290]
     )
     
     # Create dataset with extracted sub-volumes (depth=56, height=128, width=128) from validation split
     dataset_val = Dataset3D(
-        root_dir='/home/asavari/foundation_model/datasets/cholec_8k_3d',
+        root_dir='/mnt/data/omkumar/foundation_model/foundation_phase1/datasets/Brats_3d_128',
         split='val',
         target_depth=56,
         target_height=128,
         target_width=128,
         extraction_mode="center",
+        mean=[476.9169, 281.4515],
+        std=[1058.0099, 1036.7290]
     )
     
     print(f"Train dataset size: {len(dataset_train)}")
