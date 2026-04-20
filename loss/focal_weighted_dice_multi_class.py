@@ -30,7 +30,11 @@ class WeightedCrossEntropyDiceLoss(nn.Module):
         # Convert targets to one-hot encoding
         num_classes = inputs.shape[1]
         targets_one_hot = F.one_hot(targets, num_classes=num_classes)  # [B, H, W, C]
-        targets_one_hot = targets_one_hot.permute(0, 3, 1, 2).float()  # [B, C, H, W]
+
+        if targets_one_hot.dim() == 5:
+            targets_one_hot = targets_one_hot.permute(0, 4, 1, 2, 3).float() # [B, C, D, H, W]
+        else:
+            targets_one_hot = targets_one_hot.permute(0, 3, 1, 2).float()  # [B, C, H, W]
         
         # Calculate dice for each class
         dice_scores = []

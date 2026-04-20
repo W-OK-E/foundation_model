@@ -1,6 +1,7 @@
 import pytorch_lightning as L
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from PIL import Image
 
 from utils.visualizer import visualize
@@ -25,6 +26,14 @@ class ElitLightModel(L.LightningModule):
         image,gt_mask = image.float(), gt_mask.long()
 
         pred = self.model(image)
+
+        if pred.shape[2:] != gt_mask.shape[1:]:
+            pred = F.interpolate(
+                pred,
+                size=gt_mask.shape[1:],
+                mode='trilinear',
+                align_corners=False
+            )
         
         loss = self.loss(pred, gt_mask)
         

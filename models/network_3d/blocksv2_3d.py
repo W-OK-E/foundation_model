@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from .pixel_shuffle import PixelShuffle3d 
 # from module_3d import MKConv2D, CausalConv2d, DecomConv2D
 
@@ -188,15 +189,26 @@ class AttConvBlock3d(torch.nn.Module):
             out_softmax3 = self.softmax3_blocks(out_mpool3)
             
             out_interp3 = self.interpolation3(out_softmax3)
+            if out_interp3.shape != out_skip2_connection.shape:
+                out_interp3 = F.interpolate(out_interp3, size=out_skip2_connection.shape[2:], mode='trilinear', align_corners=False)
             out = torch.add(out_interp3, out_skip2_connection)
             
             out_softmax4 = self.softmax4_blocks(out)
             out_interp2 = self.interpolation2(out_softmax4)
+            if out_interp2.shape != out_skip1_connection.shape:
+                out_interp2 = F.interpolate(out_interp2, size=out_skip1_connection.shape[2:], mode='trilinear', align_corners=False)
             out = torch.add(out_interp2, out_skip1_connection)
             
             out_softmax5 = self.softmax5_blocks(out)
             out_interp1 = self.interpolation1(out_softmax5)
             out_softmax6 = self.softmax6_blocks(out_interp1)
+
+            if out_softmax6.shape != out_trunk.shape:
+                out_softmax6 = F.interpolate(
+                    out_softmax6,
+                    size=out_trunk.shape[2:],    # to match D, H, W
+                    mode='trilinear',
+                    align_corners=False)
             
             out = torch.multiply((1 + out_softmax6), out_trunk)
             out = self.last_blocks(out)
@@ -272,10 +284,17 @@ class UpConvBlock3d(torch.nn.Module):
         if skip is not None and self.skip_conn:
             if self.conv_bridge:
                 skip = self.conv_bridge_layer(skip)
+                
+                if up.shape != skip.shape:
+                    skip = F.interpolate(skip, size=up.shape[2:], mode='trilinear', align_corners=False)
                 skip = torch.multiply((1 + up), skip)
+
                 out = torch.cat([up, skip], dim=1) 
             else:
+                if up.shape != skip.shape:
+                    skip = F.interpolate(skip, size=up.shape[2:], mode='trilinear', align_corners=False)
                 skip = torch.multiply((1 + up), skip)
+
                 out = torch.cat([up, skip], dim=1)
             out = self.conv_layer2(out, attention=True)
         else:
