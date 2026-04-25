@@ -25,15 +25,16 @@ class ElitLightModel(L.LightningModule):
         image,gt_mask = batch
         image,gt_mask = image.float(), gt_mask.long()
 
+        print("In the forward pass:, Shapes:",image.shape, gt_mask.shape)
         pred = self.model(image)
 
-        if pred.shape[2:] != gt_mask.shape[1:]:
-            pred = F.interpolate(
-                pred,
-                size=gt_mask.shape[1:],
-                mode='trilinear',
-                align_corners=False
-            )
+        # if pred.shape[2:] != gt_mask.shape[1:]:
+        #     pred = F.interpolate(
+        #         pred,
+        #         size=gt_mask.shape[1:],
+        #         mode='trilinear',
+        #         align_corners=False
+        #     )
         
         loss = self.loss(pred, gt_mask)
         
@@ -70,6 +71,7 @@ class ElitLightModel(L.LightningModule):
     def validation_step(self, batch:list):
         print("Got the batch for validation")
         image,gt_mask = batch
+        print("Shapes of image and gt_mask:", image.shape, gt_mask.shape)
         #Please apply appropriate type casting in your respective loss functions if needed donot change here.
         
         image,gt_mask = image.float(), gt_mask.float() 
@@ -81,6 +83,7 @@ class ElitLightModel(L.LightningModule):
         else:
             pred_for_metrics = pred
 
+        print("Caculating Loss:", pred.shape, gt_mask.shape)
         loss = self.loss(pred, gt_mask)
         # print("VALIDATION")
         # import ipdb

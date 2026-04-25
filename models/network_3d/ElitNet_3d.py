@@ -3,7 +3,10 @@ sys.path.append("/mnt/data/omkumar/foundation_phase1/models/network_3d")
 
 import torch.nn as nn
 from typing import List
-from .blocksv2_3d import ConvBlock3d, DoubleAttBlock3d, UpConvBlock3d
+try:
+    from .blocksv2_3d import ConvBlock3d, DoubleAttBlock3d, UpConvBlock3d
+except ImportError:
+    from blocksv2_3d import ConvBlock3d, DoubleAttBlock3d, UpConvBlock3d
 
 class ELiTNetEncoder3d(nn.Module):
     def __init__(
@@ -63,16 +66,22 @@ class ELiTNetDecoder3d(nn.Module):
                                 up_mode=up_mode, conv_bridge=conv_bridge, shortcut=shortcut, skip_conn=skip_conn, 
                                 residual=residual, causal=causal, conv_mode=conv_mode)
             self.up_path.append(block)
-            
-        self.final = nn.Conv3d(layers[0], n_classes, kernel_size=1)
+
 
     def forward(self, x, down_activations):
         for i, up in enumerate(self.up_path):
             skip = down_activations[i] if i < len(down_activations) else None
             x = up(x, skip)
-        return self.final(x)
+        return x
 
+class ELitNetFinalBlock3d(nn.Module):
+    def __init__(self, in_c, out_c, k_sz, conv_mode='Conv3d'):
+        super().__init__()
+        self.conv = nn.Conv3d(in_c, out_c, kernel_size=k_sz)
 
+    
+    def forward(self, x):
+        return self.conv(x)
         
 class ElitNet3d(nn.Module):
     def __init__(self, in_channels, num_classes, layers, kernel_sz=3, up_mode='up_conv', pool='pool', 
@@ -101,7 +110,7 @@ class ElitNet3d(nn.Module):
         
         self.encoder = ELiTNetEncoder3d(in_channels, kernel_sz, layers, pool=pool, residual=residual, causal=causal, conv_mode=conv_mode)
         self.decoder = ELiTNetDecoder3d(num_classes, kernel_sz, layers, up_mode, conv_bridge, shortcut, skip_conn, residual, causal, conv_mode=conv_mode)
-
+        self.final = ELitNetFinalBlock3d(layers[0], num_classes, 1)
         # Weight initialisation (matches reference ELiTNet3D)
         for m in self.modules():
             if isinstance(m, nn.Conv3d):
@@ -111,6 +120,11 @@ class ElitNet3d(nn.Module):
                 nn.init.constant_(m.bias, 0)
 
     def forward(self, x):
+        inp_shape = x.shape
         x, down_activations = self.encoder(x)
         x = self.decoder(x, down_activations)
+        #If shape mismatch occurs, interpolate to match input shape (common in segmentation tasks)
+        if x.shape[2:] != inp_shape[2:]:
+            x = nn.functional.interpolate(x, size=inp_shape[2:], mode='trilinear', align_corners=False)
+        x = self.final(x)
         return x

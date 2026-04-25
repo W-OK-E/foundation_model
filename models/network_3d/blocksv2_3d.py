@@ -1,7 +1,10 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from .pixel_shuffle import PixelShuffle3d 
+try:
+    from .pixel_shuffle import PixelShuffle3d 
+except:
+    from pixel_shuffle import PixelShuffle3d
 # from module_3d import MKConv2D, CausalConv2d, DecomConv2D
 
 def conv1x1_3d(in_planes, out_planes, stride=1):
