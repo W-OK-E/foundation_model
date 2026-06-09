@@ -48,5 +48,5 @@ class SEGDataset(Dataset):
         if self.transform:
             transformed = self.transform(image=image, mask=mask)
             image, mask = transformed["image"], transformed["mask"]
-            
+        
         return image, mask.long(), self.dataset_name

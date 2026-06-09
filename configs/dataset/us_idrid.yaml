@@ -1,6 +1,6 @@
 # Multi-Head Foundation Dataset Config
 name: Multi_Foundation_v1
-global_batch_size: 16 # Common batch size for joint training
+global_batch_size: 8 # Common batch size for joint training
 
 # Map dataset names to their class counts for the multi-head architecture
 num_classes:
@@ -30,10 +30,10 @@ train_dataset:
   IDRiD:
     _target_: data.data.SEGDataset
     dataset_name: IDRiD
-    root_dir: ${data_dir}/IDRiD_1024/
+    root_dir: ${data_dir}/IDRiD_512/
     split: train
     # img_size: [2848, 4288]
-    train_im_size: [1024, 1024]
+    train_im_size: [512, 512]
     mean: [0.4546, 0.2242, 0.0673]
     std: [0.3364, 0.1738, 0.0874]
     cls_weights: [0.00995578, 0.9448299,  1.06201258, 9.19234983, 0.53680837, 5.12533219]
@@ -54,12 +54,15 @@ val_dataset:
   IDRiD:
     _target_: data.data.SEGDataset
     dataset_name: IDRiD
-    root_dir: ${data_dir}/IDRiD_1024/
+    root_dir: ${data_dir}/IDRiD_512/
     split: val
     # img_size: [2848, 4288]
-    train_im_size: [1024, 1024]
+    train_im_size: [512, 512]
     mean: [0.4546, 0.2242, 0.0673]
     std: [0.3364, 0.1738, 0.0874]
+    cls_weights: [0.00995578, 0.9448299,  1.06201258, 9.19234983, 0.53680837, 5.12533219]
+
+
 
 # Test Datasets
 test_dataset:
@@ -75,12 +78,15 @@ test_dataset:
   IDRiD:
     _target_: data.data.SEGDataset
     dataset_name: IDRiD
-    root_dir: ${data_dir}/IDRiD_1024/
+    root_dir: ${data_dir}/IDRiD_512/
     split: test
     # img_size: [2848, 4288]
-    train_im_size: [1024, 1024]
+    train_im_size: [512, 512]
     mean: [0.4546, 0.2242, 0.0673]
     std: [0.3364, 0.1738, 0.0874]
+    cls_weights: [0.00995578, 0.9448299,  1.06201258, 9.19234983, 0.53680837, 5.12533219]
+
+
 
 # Logging metadata (placeholders as metrics are now dataset-specific)
 class_names: ["BG", "Task_Specific"]

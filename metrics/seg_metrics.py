@@ -38,7 +38,7 @@ class SegmentationMetrics(Metric):
 
         gt = gt.flatten().cpu().numpy()
         pred = pred.flatten().cpu().numpy()
-
+        
         if self.ignore_index is not None:
             mask = (gt != self.ignore_index)
             gt = gt[mask]

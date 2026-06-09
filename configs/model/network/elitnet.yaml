@@ -1,9 +1,11 @@
 instance:
-  _target_: models.network.ElitNet.ElitNet
+  _target_: models.network.ElitNet
   in_channels : 3
   dataset_classes : ${dataset.num_classes}
-  layers : [4,8,16,24]
+  layers : [16,32,64,128]
   kernel_sz : 3 
   up_mode : 'pixelshuffle'  
   conv_bridge : True 
   shortcut : True
+  bottleneck_factor: 4
+  num_repetitions: 2

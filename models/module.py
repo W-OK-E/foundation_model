@@ -62,9 +62,13 @@ class ElitLightModel(L.LightningModule):
                 image, gt_mask = image.float(), gt_mask.long()
 
                 pred = self.model(image, dataset_name=dataset_name)
+
                 # Use dataset-specific loss
                 loss = self.loss[dataset_name](pred, gt_mask)
-                total_loss += loss
+                if ("us" in dataset_name.lower()):  
+                    total_loss += 0.2 * loss
+                else:
+                    total_loss += 0.8 * loss
                 
                 # Log stats with dataset prefix
                 self.train_metrics[dataset_name].update(pred.detach(), gt_mask)

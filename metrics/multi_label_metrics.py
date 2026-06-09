@@ -71,10 +71,9 @@ class SegmentationMetrics(Metric):
         
         self.metrics = MetricCollection(metrics)
 
-    def to(self, device):
-        """Move metrics to device."""
-        self.metrics = self.metrics.to(device)
-        return self
+    def to(self, *args, **kwargs):
+        self.metrics = self.metrics.to(*args, **kwargs)
+        return super().to(*args, **kwargs)
 
     def update(self, pred: torch.Tensor, gt: torch.Tensor):
         """
@@ -83,20 +82,12 @@ class SegmentationMetrics(Metric):
             pred: B x C x H x W (predicted logits or probabilities)
             gt: B x C x H x W (ground truth binary masks for multi-label)
         """
-        assert len(pred.shape) == 4, "pred must be B x C x H x W"    
+        assert len(pred.shape) == 4, "pred must be B x C x H x W"
         assert len(gt.shape) == 4, "gt must be B x C x H x W for multi-label"
-        print("SHapes:",pred.shape,gt.shape)
-        # Flatten spatial dimensions: B x C x H x W -> (B*H*W) x C
         B, C, H, W = pred.shape
         gt = gt.long()
-        self.metrics.to(pred.device)
+        self.metrics = self.metrics.to(pred.device)
         self.metrics.update(pred, gt)
-        # pred_flat = pred.permute(0, 2, 3, 1).reshape(-1, C)  # (B*H*W) x C
-        # gt_flat = gt.permute(0, 2, 3, 1).reshape(-1, C)      # (B*H*W) x C
-        # gt_flat = gt_flat.int()
-
-        # self.metrics.to(pred_flat.device)
-        # self.metrics.update(pred_flat, gt_flat)
 
     def compute(self):
         """

@@ -80,10 +80,9 @@ class SegmentationMetrics3D(Metric):
         
         self.metrics = MetricCollection(metrics)
 
-    def to(self, device):
-        """Move metrics to device."""
-        self.metrics = self.metrics.to(device)
-        return self
+    def to(self, *args, **kwargs):
+        self.metrics = self.metrics.to(*args, **kwargs)
+        return super().to(*args, **kwargs)
 
     def update(self, pred: torch.Tensor, gt: torch.Tensor):
         """
@@ -98,10 +97,7 @@ class SegmentationMetrics3D(Metric):
         pred_flat = pred.permute(0, 2, 3, 4, 1).reshape(-1, C)  # (B*D*H*W) x C
         gt_flat = gt.reshape(-1)  # (B*D*H*W)
         gt_flat = gt_flat.long()
-        # print("Moving Metrics to:",pred_flat.device)
-        # import ipdb
-        # ipdb.set_trace()
-        self.metrics.to(pred_flat.device)
+        self.metrics = self.metrics.to(pred_flat.device)
         self.metrics.update(pred_flat, gt_flat)
 
     def compute(self):
