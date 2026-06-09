@@ -1,12 +1,12 @@
 import pytorch_lightning as L
 import torch
-import ipdb
 import torch.nn as nn
 from PIL import Image
 
 from utils.visualizer import visualize
 from .network.ElitNet import ElitNet
 from hydra.utils import instantiate
+from loss.pcgrad import pcgrad
 
 class ElitLightModel(L.LightningModule):
     def __init__(self, cfg):
@@ -50,30 +50,57 @@ class ElitLightModel(L.LightningModule):
             self.val_metrics = instantiate(self.model_cfg.val_metrics, num_classes=num_classes)
             self.test_metrics = instantiate(self.model_cfg.test_metrics, num_classes=num_classes)
 
+        if self.is_multihead:
+            self.automatic_optimization = False
+            self._last_val_loss = None
+
         self.val_steps = 0
         self.viz_image_count = 0
 
     def training_step(self, batch):
         if isinstance(batch, dict):
-            # MULTI-LOADER MODE (from CombinedLoader)
-            total_loss = 0
+            # MULTI-LOADER MODE with PCGrad gradient surgery on the shared encoder
+            opt = self.optimizers()
+            enc_named = list(self.model.encoder.named_parameters())
+
+            task_losses = {}
+            enc_grads = {}
+
+            # Per-task forward + backward to collect encoder gradients
             for dataset_name, d_batch in batch.items():
                 image, gt_mask, _ = d_batch
                 image, gt_mask = image.float(), gt_mask.long()
-
                 pred = self.model(image, dataset_name=dataset_name)
-
-                # Use dataset-specific loss
                 loss = self.loss[dataset_name](pred, gt_mask)
-                if ("us" in dataset_name.lower()):  
-                    total_loss += 0.2 * loss
-                else:
-                    total_loss += 0.8 * loss
-                
-                # Log stats with dataset prefix
+                task_losses[dataset_name] = loss
+
                 self.train_metrics[dataset_name].update(pred.detach(), gt_mask)
                 self.log(f"train/{dataset_name}/loss", loss, sync_dist=True)
-            
+
+                opt.zero_grad()
+                self.manual_backward(loss, retain_graph=True)
+                enc_grads[dataset_name] = {
+                    n: p.grad.clone() for n, p in enc_named if p.grad is not None
+                }
+
+            # PCGrad surgery on encoder gradients
+            combined_enc_grad, conflict_rate = pcgrad(list(enc_grads.values()))
+            self.log("train/grad_conflict_rate", conflict_rate, on_step=True, on_epoch=False)
+
+            # Final backward to get decoder gradients (computation graph still alive)
+            opt.zero_grad()
+            total_loss = sum(
+                (0.2 if "us" in ds.lower() else 0.8) * l
+                for ds, l in task_losses.items()
+            )
+            self.manual_backward(total_loss)
+
+            # Override encoder grads with PCGrad result
+            for n, p in enc_named:
+                if n in combined_enc_grad:
+                    p.grad = combined_enc_grad[n]
+
+            opt.step()
             return total_loss
         
         # SINGLE LOADER MODE
@@ -141,7 +168,9 @@ class ElitLightModel(L.LightningModule):
                     self.log(f"{prefix}{metric_name}", m_val, sync_dist=True, on_step=True)
                 metrics.reset()
             
-            self.log("val/loss", total_loss / len(batch), sync_dist=True, on_epoch=True)
+            avg_val_loss = total_loss / len(batch)
+            self.log("val/loss", avg_val_loss, sync_dist=True, on_epoch=True)
+            self._last_val_loss = avg_val_loss.item()
             return
 
         # SINGLE LOADER MODE
@@ -176,25 +205,10 @@ class ElitLightModel(L.LightningModule):
         self.val_steps += 1
 
     def on_validation_epoch_end(self):
-        pass
-        #TODO: Remove this if the reset at every step works.
-        # mean_metrics, class_metrics = self.val_metrics.compute()
-        
-        # precisions = []
-        # for metric_name,metric_value  in class_metrics.items():
-        #     if("precision" in metric_name):
-        #         precisions.append(metric_value)
-        
-        # mean_metrics["m_prec"] = sum(precisions)/len(precisions)
-
-        # for metric_name, metric_value in mean_metrics.items():
-        #     self.log(
-        #         f"val/{metric_name}",
-        #         metric_value,
-        #         sync_dist=True,
-        #         on_step=False
-        #     )
-        # self.val_metrics.reset()
+        if not self.automatic_optimization:
+            sch = self.lr_schedulers()
+            if sch is not None and self._last_val_loss is not None:
+                sch.step(self._last_val_loss)
 
     @torch.no_grad()
     def test_step(self, batch):
