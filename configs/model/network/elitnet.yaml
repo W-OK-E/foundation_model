@@ -1,0 +1,9 @@
+instance:
+  _target_: models.network.Elit_res.ElitNet
+  in_channels : ${dataset.num_channels}
+  num_classes : ${dataset.num_classes}
+  layers : [4,8,16]
+  kernel_sz : 3 
+  up_mode : 'up_conv'  
+  conv_bridge : True 
+  shortcut : True

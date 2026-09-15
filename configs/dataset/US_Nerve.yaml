@@ -1,0 +1,47 @@
+name: US_Nerve
+global_batch_size: 16
+img_size: [420, 580]
+train_im_size: [512, 640]
+num_channels: 3
+num_classes: 2
+is_3d: false
+ignore_index: ~
+class_names: ["BG","Nerves"]
+mean_per_channel: [0.38990931, 0.38990931, 0.38990931]
+std_per_channel: [0.22191754, 0.22191754, 0.22191754]
+multi_label: False
+dry_run: False
+cls_weights: [1, 1]
+
+train_dataset:
+  _partial_: false
+  _target_: data.data.SEGDataset
+  root_dir: ${data_dir}/US_Nerve/
+  split: train
+  img_size : ${..img_size}
+  mean: ${..mean_per_channel}
+  std: ${..std_per_channel}
+  multi_label: ${..multi_label}
+  dry_run: ${..dry_run}
+
+val_dataset:
+  _partial_: false
+  _target_: data.data.SEGDataset
+  root_dir: ${data_dir}/US_Nerve/
+  split: val
+  img_size : ${..img_size}
+  mean: ${..mean_per_channel}
+  std: ${..std_per_channel}
+  multi_label: ${..multi_label}
+  dry_run: ${..dry_run}
+
+test_dataset:
+  _partial_: false
+  _target_: data.data.SEGDataset
+  root_dir: ${data_dir}/US_Nerve/
+  split: test
+  img_size : ${..img_size}
+  mean: ${..mean_per_channel}
+  std: ${..std_per_channel}
+  multi_label: ${..multi_label}
+  dry_run: ${..dry_run}

@@ -1,0 +1,46 @@
+name: IDRiD
+global_batch_size: 2
+img_size: [1024, 1024]
+train_im_size: [1024, 1024]
+num_channels: 3
+num_classes: 6
+ignore_index: ~
+class_names: ["BG","EX", "HE", "MA", "OD", "SE"]
+mean_per_channel: [0.45458799, 0.22424427, 0.06732585]
+std_per_channel: [0.33639381 ,0.17377482 ,0.08736828]
+multi_label: True
+dry_run: False
+cls_weights: [0.00995578, 0.9448299,  1.06201258, 9.19234983, 0.53680837, 5.12533219]
+
+train_dataset:
+  _partial_: false #Use Partial to avoid instantiating dataset at config load time or to pass any args dymanically
+  _target_: data.data.SEGDataset
+  root_dir: ${data_dir}/IDRID_p/
+  split: train
+  img_size : ${..img_size}
+  multi_label: ${..multi_label}
+  dry_run: ${..dry_run}
+  mean: ${..mean_per_channel}
+  std: ${..std_per_channel}
+
+val_dataset:
+  _partial_: false
+  _target_: data.data.SEGDataset
+  root_dir: ${data_dir}/IDRID_p/
+  split: val
+  img_size : ${..img_size}
+  multi_label: ${..multi_label}
+  dry_run: ${..dry_run}
+  mean: ${..mean_per_channel}
+  std: ${..std_per_channel}
+
+test_dataset:
+  _partial_: false
+  _target_: data.data.SEGDataset
+  root_dir: ${data_dir}/IDRID_p/
+  split: test
+  img_size : ${..img_size}
+  multi_label: ${..multi_label}
+  dry_run: ${..dry_run}
+  mean: ${..mean_per_channel}
+  std: ${..std_per_channel}

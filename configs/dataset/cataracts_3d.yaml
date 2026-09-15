@@ -1,0 +1,57 @@
+name: cataracts_3d
+is_3d: True
+global_batch_size: 2
+img_size: [128, 128, 128]  # d x h x w
+num_channels: 3
+num_classes: 16
+ignore_index: ~
+class_names: ['bg','pupil', 'cornea', 'skin', 'iris', 'surgical_instrument', 
+              'hand', 'speculum', 'other_instruments', 'lens', 'background', 'misc',
+              'unknown', 'lens', 'background', 'misc']
+mean_per_channel: [0.30843202, 0.26594361, 0.21238147]
+std_per_channel: [0.30274876, 0.23929678, 0.20821963]
+multi_label: False
+dry_run: False
+cls_weights: [2.29607902e-03, 7.19094659e-01, 5.20697471e-01, 2.37284063e-02,
+ 8.93261130e-01, 6.00923819e-01, 1.91651017e+00, 2.18932818e-02,
+ 1.13570992e+00, 3.22350778e+00, 4.40250821e+00, 5.05215794e+00,
+ 4.79927373e-01, 4.96169558e+00, 3.57162381e+01, 7.61392973e+04]
+
+train_dataset:
+  _partial_: false
+  _target_: data.data3d.Dataset3D
+  root_dir: ${data_dir}/cataracts_3d
+  split: train
+  target_depth: 128
+  target_height: 128
+  target_width: 128
+  extraction_mode: center
+  mean: ${..mean_per_channel}
+  std: ${..std_per_channel}
+  dry_run: ${..dry_run}
+
+val_dataset:
+  _partial_: false
+  _target_: data.data3d.Dataset3D
+  root_dir: ${data_dir}/cataracts_3d
+  split: val
+  target_depth: 128
+  target_height: 128
+  target_width: 128
+  extraction_mode: center
+  mean: ${..mean_per_channel}
+  std: ${..std_per_channel}
+  dry_run: ${..dry_run}
+
+test_dataset:
+  _partial_: false
+  _target_: data.data3d.Dataset3D
+  root_dir: ${data_dir}/cataracts_3d
+  split: test
+  target_depth: 128
+  target_height: 128
+  target_width: 128
+  extraction_mode: center
+  mean: ${..mean_per_channel}
+  std: ${..std_per_channel}
+  dry_run: ${..dry_run}

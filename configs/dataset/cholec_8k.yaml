@@ -1,0 +1,47 @@
+name: Cholec_8k
+global_batch_size: 16
+img_size: [480, 854]
+train_im_size: [512, 896]
+num_channels: 3
+num_classes: 24
+is_3d: false
+ignore_index: ~
+class_names: ["Black Background","Abdominal Wall","Liver","Gastrointestinal Tract","Fat","Grasper","Connective Tissue","Blood","Cystic Duct","L-hook Electrocautery","Gallbladder","Hepatic Vein","Instrument","Gallbladder Fold","Gallbladder Wall","Portal Vein","Hepatic Artery","Hepatic Vein","Inferior Vena Cava","Portal Vein","Hepatic Artery","Hepatic Vein","Inferior Vena Cava","Portal Vein"]
+mean_per_channel: [0.3782772, 0.23324355, 0.22724209]
+std_per_channel: [0.27367861, 0.23258302, 0.21778946]
+multi_label: False
+dry_run: False
+cls_weights: [0.307611788, 2790.15445, 3.25865581, 0.579923131, 0.83876963, 0.192239589, 1.15761036, 0.704655605, 0.880164325, 3.56306789, 1.83491041, 16.7977953]
+
+train_dataset:
+  _partial_: false
+  _target_: data.data.SEGDataset
+  root_dir: ${data_dir}/Cholec8k/
+  split: train
+  img_size : ${..img_size}
+  mean: ${..mean_per_channel}
+  std: ${..std_per_channel}
+  multi_label: ${..multi_label}
+  dry_run: ${..dry_run}
+
+val_dataset:
+  _partial_: false
+  _target_: data.data.SEGDataset
+  root_dir: ${data_dir}/Cholec8k/
+  split: val
+  img_size : ${..img_size}
+  mean: ${..mean_per_channel}
+  std: ${..std_per_channel}
+  multi_label: ${..multi_label}
+  dry_run: ${..dry_run}
+
+test_dataset:
+  _partial_: false
+  _target_: data.data.SEGDataset
+  root_dir: ${data_dir}/Cholec8k/
+  split: test
+  img_size : ${..img_size}
+  mean: ${..mean_per_channel}
+  std: ${..std_per_channel}
+  multi_label: ${..multi_label}
+  dry_run: ${..dry_run}

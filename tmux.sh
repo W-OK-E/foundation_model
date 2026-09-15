@@ -1,0 +1,1 @@
+tmux new-session -s cholec3d 'export CUDA_VISIBLE_DEVICES="1"; exec bash'

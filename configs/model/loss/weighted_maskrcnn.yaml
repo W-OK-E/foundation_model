@@ -1,0 +1,4 @@
+instance:
+  _target_: loss.loss.Weighted_Maskrcnn_loss
+  weight: null
+  ignore_index: null
